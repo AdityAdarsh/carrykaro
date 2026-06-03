@@ -1,0 +1,148 @@
+/* ─── Design Tokens ───────────────────────────────── */
+:root {
+  --saffron:       #E8601C;
+  --saffron-light: #F27C3A;
+  --saffron-pale:  #FDF0E8;
+  --ink:           #1A1209;
+  --ink-mid:       #3D2E1E;
+  --ink-light:     #7A6555;
+  --cream:         #FAF6F1;
+  --white:         #FFFFFF;
+  --green:         #1E7A4A;
+  --green-light:   #E8F5EE;
+  --border:        #E8DDD4;
+  --shadow:        0 4px 24px rgba(26,18,9,0.10);
+  --shadow-lg:     0 12px 48px rgba(26,18,9,0.16);
+
+  --font-heading: 'Fraunces', serif;
+  --font-body:    'Plus Jakarta Sans', sans-serif;
+
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+
+  --max-width:  1200px;
+  --page-px:    48px;
+}
+
+/* ─── Reset ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ─── Typography ──────────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--ink);
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ─── Utility Classes ─────────────────────────────── */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-px);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.btn-primary {
+  background: var(--saffron);
+  color: var(--white);
+}
+.btn-primary:hover {
+  background: var(--saffron-light);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover {
+  border-color: var(--saffron);
+  color: var(--saffron);
+}
+
+/* Cards */
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Labels / Tags */
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+}
+.status-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Form inputs */
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--saffron); }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 24px 0;
+}

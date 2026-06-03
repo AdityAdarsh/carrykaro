@@ -1,0 +1,52 @@
+from fastapi import APIRouter, Depends, Query, HTTPException
+from typing import Optional
+from app.dependencies import get_current_user
+from app.database import get_supabase
+from app.models.request import DeliveryRequestCreate
+from postgrest.exceptions import APIError
+
+router = APIRouter()
+
+
+@router.post("")
+async def create_request(body: DeliveryRequestCreate, user=Depends(get_current_user)):
+    db = get_supabase()
+    data = {**body.model_dump(), "user_id": user.id, "status": "open"}
+    data["needed_by_date"] = str(data["needed_by_date"])
+    try:
+        result = db.table("requests").insert(data).execute()
+    except APIError as e:
+        if e.code == "23503":
+            raise HTTPException(status_code=400, detail="Please complete your profile before posting a request.")
+        raise HTTPException(status_code=500, detail=str(e.message))
+    return result.data[0]
+
+
+@router.get("")
+async def list_requests(
+    from_city: Optional[str] = Query(None),
+    to_city: Optional[str] = Query(None),
+    user=Depends(get_current_user),
+):
+    db = get_supabase()
+    q = db.table("requests").select("*, users(name, city)").eq("status", "open")
+    if from_city:
+        q = q.eq("from_city", from_city)
+    if to_city:
+        q = q.eq("to_city", to_city)
+    result = q.order("needed_by_date").execute()
+    return result.data
+
+
+@router.get("/{request_id}")
+async def get_request(request_id: str, user=Depends(get_current_user)):
+    db = get_supabase()
+    result = db.table("requests").select("*, users(name, city)").eq("id", request_id).single().execute()
+    return result.data
+
+
+@router.delete("/{request_id}")
+async def cancel_request(request_id: str, user=Depends(get_current_user)):
+    db = get_supabase()
+    db.table("requests").update({"status": "cancelled"}).eq("id", request_id).eq("user_id", user.id).execute()
+    return {"ok": True}

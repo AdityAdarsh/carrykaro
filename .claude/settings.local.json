@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m uvicorn app.main:app --port 8000)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(curl http://localhost:8000/requests)",
+      "Bash(pip install *)",
+      "Bash(curl -s http://localhost:8000/requests)",
+      "PowerShell(try { Invoke-WebRequest -Uri \"http://localhost:8000/requests\" -UseBasicParsing } catch { $_.Exception.Message; $_.Exception.Response.StatusCode })",
+      "Bash(npm run *)",
+      "PowerShell(Stop-Process -Name python -Force -ErrorAction SilentlyContinue)",
+      "Bash(git init *)"
+    ]
+  }
+}
