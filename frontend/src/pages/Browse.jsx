@@ -25,14 +25,9 @@ export default function Browse() {
 
   return (
     <main style={{ paddingTop: 80, minHeight: '100vh', padding: '80px var(--page-px) 48px' }}>
-      <div style={{ maxWidth: 'var(--max-width)', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800 }}>Browse</h1>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={() => navigate('/post-request')} className="btn btn-outline">+ Post request</button>
-            <button onClick={() => navigate('/post-trip')} className="btn btn-primary">+ Post trip</button>
-          </div>
-        </div>
+      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+        <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Browse</h1>
+        <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 32 }}>Find delivery requests or travellers with spare capacity.</p>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 28, borderBottom: '1.5px solid var(--border)' }}>
@@ -61,7 +56,7 @@ export default function Browse() {
         {/* Items */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {items.map(item => (
-            <Card key={item.id} onClick={() => navigate(tab === 'requests' ? `/post-trip?request=${item.id}` : `/post-request?trip=${item.id}`)}>
+            <Card key={item.id} onClick={() => navigate(tab === 'requests' ? `/requests/${item.id}` : `/trips/${item.id}`)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{item.from_city} → {item.to_city}</div>

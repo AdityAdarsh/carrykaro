@@ -15,7 +15,7 @@ export default function PostTrip() {
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    await api.post('/trips/', { ...form, capacity_kg: parseFloat(form.capacity_kg), earning_range_min: parseInt(form.earning_range_min), earning_range_max: parseInt(form.earning_range_max) })
+    await api.post('/trips', { ...form, capacity_kg: parseFloat(form.capacity_kg), earning_range_min: parseInt(form.earning_range_min), earning_range_max: parseInt(form.earning_range_max) })
     navigate('/browse')
   }
 

@@ -38,3 +38,5 @@ class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     city: Optional[str] = None
     role: Optional[UserRole] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
