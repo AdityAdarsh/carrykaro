@@ -12,7 +12,6 @@ import ChatPage from './pages/ChatPage'
 import Profile from './pages/Profile'
 import RequestDetail from './pages/RequestDetail'
 import TripDetail from './pages/TripDetail'
-import FontPreview from './pages/FontPreview'
 
 function HomeRedirect() {
   const { user, loading } = useAuth()
@@ -44,7 +43,6 @@ export default function App() {
         <Route path="/matches/:matchId" element={<ProtectedRoute><MatchPage /></ProtectedRoute>} />
         <Route path="/chat/:matchId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/font-preview" element={<FontPreview />} />
       </Routes>
     </BrowserRouter>
   )
