@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_anon_key: str
 
-    razorpay_key_id: str
-    razorpay_key_secret: str
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
 
     kyc_provider: str = "idfy"
     kyc_api_key: str = ""
