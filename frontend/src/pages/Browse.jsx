@@ -13,6 +13,12 @@ export default function Browse() {
   const [filters, setFilters] = useState({ from_city: '', to_city: '' })
 
   useEffect(() => {
+    api.get('/users/profile').catch(err => {
+      if (err.message === 'Profile not found') navigate('/onboarding')
+    })
+  }, [])
+
+  useEffect(() => {
     const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v))
     if (tab === 'requests') {
       api.get(`/requests?${params}`).then(setRequests)
