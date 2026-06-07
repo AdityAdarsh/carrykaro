@@ -59,7 +59,7 @@ export default function TripDetail() {
             <StatusBadge status={trip.status} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div className="grid-2" style={{ marginBottom: 20 }}>
             <Detail label="Travel date" value={formatDate(trip.travel_date)} />
             <Detail label="Travel mode" value={trip.travel_mode} />
             <Detail label="Spare capacity" value={`${trip.capacity_kg} kg`} />
@@ -72,7 +72,7 @@ export default function TripDetail() {
         </Card>
 
         {trip.status === 'open' && (
-          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Need to send something?</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Send a package on this trip</div>

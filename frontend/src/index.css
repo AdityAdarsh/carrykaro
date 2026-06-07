@@ -146,3 +146,93 @@ a { color: inherit; text-decoration: none; }
   background: var(--border);
   margin: 24px 0;
 }
+
+/* ─── Responsive Layout Classes ───────────────────── */
+
+/* Hero: 2-col desktop → 1-col mobile */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0 var(--page-px);
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.hero-h1 {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 24px;
+}
+
+/* Generic 2-col grid for forms + detail views */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Browse filters row */
+.browse-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.browse-filters .input {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Nav: desktop vs mobile */
+.nav-links-desktop { display: flex; align-items: center; gap: 24px; }
+.nav-signout-mobile { display: none; }
+.nav-bottom { display: none; }
+
+/* ─── Tablet (641px – 900px) ──────────────────────── */
+@media (min-width: 641px) and (max-width: 900px) {
+  :root { --page-px: 28px; }
+  .hero-grid { gap: 40px; }
+  .hero-h1 { font-size: 44px; }
+}
+
+/* ─── Mobile (≤ 640px) ────────────────────────────── */
+@media (max-width: 640px) {
+  :root { --page-px: 16px; }
+
+  .card { padding: 18px 16px; }
+
+  /* push content above the fixed bottom nav */
+  main { padding-bottom: 72px !important; }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    min-height: unset;
+    padding: 48px var(--page-px) 40px;
+  }
+
+  .hero-h1 { font-size: 34px; }
+
+  .grid-2 { grid-template-columns: 1fr; }
+
+  /* Nav */
+  .nav-links-desktop { display: none; }
+  .nav-signout-mobile { display: inline-flex; }
+
+  .nav-bottom {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    height: 60px;
+    background: rgba(250, 246, 241, 0.96);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+  }
+}

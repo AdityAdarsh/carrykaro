@@ -38,7 +38,7 @@ export default function PostRequest() {
         <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 32 }}>Travellers on this corridor will see it and offer to carry.</p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             {['from_city', 'to_city'].map(key => (
               <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label className="label">{key === 'from_city' ? 'From' : 'To'}</label>
@@ -52,7 +52,7 @@ export default function PostRequest() {
 
           <Input label="Needed by" name="needed_by_date" type="date" value={form.needed_by_date} onChange={e => set('needed_by_date', e.target.value)} required />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label className="label">Item type</label>
               <select className="input" value={form.item_type} onChange={e => set('item_type', e.target.value)} required>
@@ -68,7 +68,7 @@ export default function PostRequest() {
             <textarea className="input" rows={3} value={form.description} onChange={e => set('description', e.target.value)} placeholder="What is it? Any handling notes?" required style={{ resize: 'vertical' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             <Input label="Min price (₹)" name="price_range_min" type="number" value={form.price_range_min} onChange={e => set('price_range_min', e.target.value)} required />
             <Input label="Max price (₹)" name="price_range_max" type="number" value={form.price_range_max} onChange={e => set('price_range_max', e.target.value)} required />
           </div>

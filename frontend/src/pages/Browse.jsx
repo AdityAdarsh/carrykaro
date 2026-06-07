@@ -44,9 +44,9 @@ export default function Browse() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 28 }}>
+        <div className="browse-filters">
           {['from_city', 'to_city'].map(key => (
-            <select key={key} className="input" style={{ width: 200 }} value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}>
+            <select key={key} className="input" value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}>
               <option value="">{key === 'from_city' ? 'From city' : 'To city'}</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>

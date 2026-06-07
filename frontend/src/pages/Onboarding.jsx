@@ -28,7 +28,7 @@ export default function Onboarding() {
   }
 
   return (
-    <main style={{ paddingTop: 80, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px var(--page-px)' }}>
       <div className="card" style={{ width: '100%', maxWidth: 440 }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>One quick setup</h2>
         <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 28 }}>You can change everything later.</p>
@@ -46,7 +46,7 @@ export default function Onboarding() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label className="label">I want to</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="grid-2" style={{ gap: 12 }}>
               {[
                 { value: 'sender', label: 'Send packages', desc: 'Find travellers for my items' },
                 { value: 'traveller', label: 'Carry &amp; earn', desc: 'Deliver on my existing trips' },

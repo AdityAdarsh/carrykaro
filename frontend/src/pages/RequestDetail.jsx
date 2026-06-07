@@ -59,7 +59,7 @@ export default function RequestDetail() {
             <StatusBadge status={request.status} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div className="grid-2" style={{ marginBottom: 20 }}>
             <Detail label="Item type" value={request.item_type} />
             <Detail label="Weight" value={`${request.weight_kg} kg`} />
             <Detail label="Needed by" value={formatDate(request.needed_by_date)} />
@@ -79,7 +79,7 @@ export default function RequestDetail() {
         </Card>
 
         {request.status === 'open' && (
-          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Travelling this route?</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Carry this package and earn money</div>

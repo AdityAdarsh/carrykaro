@@ -3,23 +3,13 @@ import { Link } from 'react-router-dom'
 export default function Home() {
   return (
     <main style={{ paddingTop: 60 }}>
-      <section style={{
-        minHeight: '100vh',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 64,
-        alignItems: 'center',
-        padding: '0 var(--page-px)',
-        maxWidth: 'var(--max-width)',
-        margin: '0 auto',
-        background: `
+      <section className="hero-grid" style={{ background: `
           radial-gradient(ellipse at 20% 50%, rgba(232,96,28,0.10) 0%, transparent 60%),
           radial-gradient(ellipse at 80% 20%, rgba(232,96,28,0.06) 0%, transparent 50%)
-        `,
-      }}>
+        ` }}>
         <div>
           <span className="label" style={{ marginBottom: 16, display: 'block' }}>P2P Delivery · India</span>
-          <h1 style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.1, marginBottom: 24 }}>
+          <h1 className="hero-h1" style={{ fontWeight: 800, lineHeight: 1.1, marginBottom: 24 }}>
             Someone's already<br />
             <em style={{ fontStyle: 'italic', color: 'var(--saffron)' }}>going your way.</em>
           </h1>

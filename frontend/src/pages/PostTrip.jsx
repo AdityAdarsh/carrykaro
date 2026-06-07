@@ -26,7 +26,7 @@ export default function PostTrip() {
         <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 32 }}>You're already going — earn by carrying something.</p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             {['from_city', 'to_city'].map(key => (
               <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label className="label">{key === 'from_city' ? 'From' : 'To'}</label>
@@ -38,7 +38,7 @@ export default function PostTrip() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             <Input label="Travel date" name="travel_date" type="date" value={form.travel_date} onChange={e => set('travel_date', e.target.value)} required />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label className="label">Travel mode</label>
@@ -51,7 +51,7 @@ export default function PostTrip() {
 
           <Input label="Spare capacity (kg)" name="capacity_kg" type="number" value={form.capacity_kg} onChange={e => set('capacity_kg', e.target.value)} placeholder="e.g. 5" required />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             <Input label="Min earning (₹)" name="earning_range_min" type="number" value={form.earning_range_min} onChange={e => set('earning_range_min', e.target.value)} required />
             <Input label="Max earning (₹)" name="earning_range_max" type="number" value={form.earning_range_max} onChange={e => set('earning_range_max', e.target.value)} required />
           </div>
