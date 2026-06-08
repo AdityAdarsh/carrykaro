@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from postgrest.exceptions import APIError
 from app.dependencies import get_current_user
 from app.database import get_supabase
 from app.models.user import UserProfileCreate, UserProfileUpdate
@@ -10,17 +11,19 @@ router = APIRouter()
 async def create_profile(body: UserProfileCreate, user=Depends(get_current_user)):
     db = get_supabase()
 
-    # Check for duplicate phone
-    if user.phone:
-        existing = db.table("users").select("id").eq("phone", user.phone).neq("id", user.id).execute()
-        if existing.data:
-            raise HTTPException(status_code=409, detail="An account with this phone number already exists.")
-
-    # Check for duplicate email
-    if user.email:
-        existing = db.table("users").select("id").eq("email", user.email).neq("id", user.id).execute()
-        if existing.data:
-            raise HTTPException(status_code=409, detail="An account with this email address already exists.")
+    try:
+        if user.phone:
+            existing = db.table("users").select("id").eq("phone", user.phone).neq("id", user.id).execute()
+            if existing.data:
+                raise HTTPException(status_code=409, detail="An account with this phone number already exists.")
+        if user.email:
+            existing = db.table("users").select("id").eq("email", user.email).neq("id", user.id).execute()
+            if existing.data:
+                raise HTTPException(status_code=409, detail="An account with this email address already exists.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     data = {
         "id": user.id,
@@ -31,7 +34,14 @@ async def create_profile(body: UserProfileCreate, user=Depends(get_current_user)
         "role": body.role,
         "kyc_status": "not_started",
     }
-    result = db.table("users").upsert(data).execute()
+    try:
+        result = db.table("users").upsert(data).execute()
+    except APIError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e.message}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {type(e).__name__}: {e}")
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Profile upsert returned no data")
     return result.data[0]
 
 
