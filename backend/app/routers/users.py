@@ -11,23 +11,8 @@ router = APIRouter()
 async def create_profile(body: UserProfileCreate, user=Depends(get_current_user)):
     db = get_supabase()
 
-    try:
-        if user.phone:
-            existing = db.table("users").select("id").eq("phone", user.phone).neq("id", user.id).execute()
-            if existing.data:
-                raise HTTPException(status_code=409, detail="An account with this phone number already exists.")
-        if user.email:
-            existing = db.table("users").select("id").eq("email", user.email).neq("id", user.id).execute()
-            if existing.data:
-                raise HTTPException(status_code=409, detail="An account with this email address already exists.")
-    except HTTPException:
-        raise
-    except Exception:
-        pass
-
     data = {
         "id": user.id,
-        "phone": user.phone,
         "email": user.email,
         "name": body.name,
         "city": body.city,
