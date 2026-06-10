@@ -186,6 +186,7 @@ Do not touch until Phase 1 metrics justify it:
 - Fraud detection
 - Custom admin dashboard
 - Request/trip status transitions
+- **Item photos** — upload input is hidden in PostRequest for now. When re-enabling: add `browser-image-compression` (client-side, silent, ≤1MB target), show thumbnail preview after pick, display photo strip in RequestDetail. Code is already in place, just commented out.
 
 ---
 

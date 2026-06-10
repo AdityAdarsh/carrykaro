@@ -115,10 +115,12 @@ export default function PostRequest() {
             {err('price_range_max')}
           </div>
 
+          {/* Photo upload hidden — re-enable with browser-image-compression in Phase 2
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label className="label">Photos (optional, up to 2)</label>
             <input type="file" accept="image/*" multiple onChange={e => setPhotos(Array.from(e.target.files).slice(0, 2))} style={{ fontSize: 13 }} />
           </div>
+          */}
 
           <Button type="submit" disabled={loading || sameCities}>
             {loading ? 'Posting…' : 'Post request'}
