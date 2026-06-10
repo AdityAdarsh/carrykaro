@@ -49,10 +49,37 @@ async def confirm_delivery(match_id: str, user=Depends(get_current_user)):
 @router.get("/my")
 async def my_matches(user=Depends(get_current_user)):
     db = get_supabase()
+    my_req = db.table("requests").select("id").eq("user_id", user.id).execute()
+    my_trip = db.table("trips").select("id").eq("user_id", user.id).execute()
+    req_ids = [r["id"] for r in (my_req.data or [])]
+    trip_ids = [t["id"] for t in (my_trip.data or [])]
+
+    or_parts = [f"initiated_by.eq.{user.id}"]
+    if req_ids:
+        or_parts.append(f"request_id.in.({','.join(req_ids)})")
+    if trip_ids:
+        or_parts.append(f"trip_id.in.({','.join(trip_ids)})")
+
     result = (
         db.table("matches")
-        .select("*, requests(*), trips(*)")
-        .or_(f"requests.user_id.eq.{user.id},trips.user_id.eq.{user.id}")
+        .select("*, requests(id, from_city, to_city, user_id, users(name)), trips(id, from_city, to_city, travel_date, user_id, users(name))")
+        .or_(",".join(or_parts))
+        .order("created_at", desc=True)
         .execute()
     )
+    return result.data
+
+
+@router.get("/{match_id}")
+async def get_match(match_id: str, user=Depends(get_current_user)):
+    db = get_supabase()
+    result = (
+        db.table("matches")
+        .select("*, requests(id, from_city, to_city, item_type, weight_kg, needed_by_date, price_range_max, user_id, users(name, city)), trips(id, from_city, to_city, travel_date, travel_mode, capacity_kg, earning_range_min, user_id, users(name, city))")
+        .eq("id", match_id)
+        .single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Match not found")
     return result.data

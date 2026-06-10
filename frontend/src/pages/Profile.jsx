@@ -8,8 +8,13 @@ import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/')
+  }
   const [profile, setProfile] = useState(null)
   const [contactEdit, setContactEdit] = useState(false)
   const [contact, setContact] = useState({ phone: '', email: '' })
@@ -141,6 +146,17 @@ export default function Profile() {
             <span>🔒</span>
             <span>Early Access Beta · You're among the first on CarryKaro. Full verification launches soon.</span>
           </div>
+
+          <div className="divider" style={{ marginTop: 20 }} />
+
+          <button onClick={handleSignOut} style={{
+            marginTop: 4, width: '100%', padding: '10px 16px',
+            borderRadius: 10, border: '1.5px solid var(--border)',
+            background: 'none', cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, color: 'var(--ink-light)',
+          }}>
+            Sign out
+          </button>
         </Card>
       </div>
     </main>

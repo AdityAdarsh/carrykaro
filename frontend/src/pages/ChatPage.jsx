@@ -13,6 +13,15 @@ export default function ChatPage() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
+  // Tell useNotifications not to badge while this chat is open;
+  // and stamp the last-read time for the inbox unread dot
+  useEffect(() => {
+    localStorage.setItem(`chat_last_read_${matchId}`, new Date().toISOString())
+    return () => {
+      localStorage.setItem(`chat_last_read_${matchId}`, new Date().toISOString())
+    }
+  }, [matchId])
+
   const send = async (e) => {
     e.preventDefault()
     if (!input.trim()) return
