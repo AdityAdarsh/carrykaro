@@ -48,5 +48,8 @@ async def get_request(request_id: str, user=Depends(get_current_user)):
 @router.delete("/{request_id}")
 async def cancel_request(request_id: str, user=Depends(get_current_user)):
     db = get_supabase()
+    accepted = db.table("matches").select("id").eq("request_id", request_id).eq("status", "accepted").execute()
+    if accepted.data:
+        raise HTTPException(status_code=409, detail="You have an active match on this request. Close the match before deleting.")
     db.table("requests").update({"status": "cancelled"}).eq("id", request_id).eq("user_id", user.id).execute()
     return {"ok": True}

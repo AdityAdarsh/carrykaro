@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
 from app.dependencies import get_current_user
 from app.database import get_supabase
@@ -37,3 +37,13 @@ async def get_trip(trip_id: str, user=Depends(get_current_user)):
     db = get_supabase()
     result = db.table("trips").select("*, users(name, city)").eq("id", trip_id).single().execute()
     return result.data
+
+
+@router.delete("/{trip_id}")
+async def cancel_trip(trip_id: str, user=Depends(get_current_user)):
+    db = get_supabase()
+    accepted = db.table("matches").select("id").eq("trip_id", trip_id).eq("status", "accepted").execute()
+    if accepted.data:
+        raise HTTPException(status_code=409, detail="You have an active match on this trip. Close the match before deleting.")
+    db.table("trips").update({"status": "cancelled"}).eq("id", trip_id).eq("user_id", user.id).execute()
+    return {"ok": True}

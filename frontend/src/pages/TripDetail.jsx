@@ -18,6 +18,8 @@ export default function TripDetail() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [matched, setMatched] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     api.get(`/trips/${id}`).then(t => {
@@ -30,6 +32,19 @@ export default function TripDetail() {
       if (mine.length > 0) setSelectedRequest(mine[0].id)
     })
   }, [id, user])
+
+  const deleteTrip = async () => {
+    if (!window.confirm('Delete this trip? This cannot be undone.')) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await api.delete(`/trips/${id}`)
+      navigate('/browse')
+    } catch (e) {
+      setDeleteError(e.message)
+      setDeleting(false)
+    }
+  }
 
   const expressInterest = async () => {
     if (!selectedRequest) return
@@ -123,7 +138,19 @@ export default function TripDetail() {
         )}
 
         {isOwn && (
-          <p style={{ marginTop: 20, fontSize: 13, color: 'var(--ink-light)', textAlign: 'center' }}>This is your trip.</p>
+          <div style={{ marginTop: 20 }}>
+            {deleteError && (
+              <p style={{ fontSize: 13, color: '#e53e3e', marginBottom: 10, textAlign: 'center' }}>{deleteError}</p>
+            )}
+            <button onClick={deleteTrip} disabled={deleting} style={{
+              width: '100%', padding: '10px 16px', borderRadius: 10,
+              border: '1.5px solid #e53e3e', background: 'none',
+              color: '#e53e3e', fontSize: 14, fontWeight: 600,
+              cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1,
+            }}>
+              {deleting ? 'Deleting…' : 'Delete trip'}
+            </button>
+          </div>
         )}
       </div>
     </main>
