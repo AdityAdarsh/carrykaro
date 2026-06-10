@@ -139,7 +139,7 @@ export default function Profile() {
             fontSize: 13, color: 'var(--saffron)', fontWeight: 500,
           }}>
             <span>🔒</span>
-            <span>KYC verification coming soon — required to send or carry packages.</span>
+            <span>Early Access Beta · You're among the first on CarryKaro. Full verification launches soon.</span>
           </div>
         </Card>
       </div>

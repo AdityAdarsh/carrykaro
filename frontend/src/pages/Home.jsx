@@ -1,6 +1,12 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import posthog from '../lib/posthog'
 
 export default function Home() {
+  useEffect(() => {
+    posthog.capture('landing_page_visit')
+  }, [])
+
   return (
     <main style={{ paddingTop: 60 }}>
       <section className="hero-grid" style={{ background: `
@@ -17,10 +23,10 @@ export default function Home() {
             Skip the courier. Connect with travellers heading between cities and get your package delivered by a real person — faster, cheaper, and with a conversation.
           </p>
           <div style={{ display: 'flex', gap: 16 }}>
-            <Link to="/login" className="btn btn-primary" style={{ fontSize: 15, padding: '12px 28px' }}>
+            <Link to="/login" className="btn btn-primary" style={{ fontSize: 15, padding: '12px 28px' }} onClick={() => posthog.capture('get_started_click', { cta: 'send_package' })}>
               Send a package
             </Link>
-            <Link to="/login" className="btn btn-outline" style={{ fontSize: 15, padding: '12px 28px' }}>
+            <Link to="/login" className="btn btn-outline" style={{ fontSize: 15, padding: '12px 28px' }} onClick={() => posthog.capture('get_started_click', { cta: 'carry_earn' })}>
               Carry &amp; earn
             </Link>
           </div>

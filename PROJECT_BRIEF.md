@@ -1,6 +1,6 @@
 # CarryKaro — Project Brief
 
-**Last updated:** 2026-06-08
+**Last updated:** 2026-06-10
 **Owner:** Aditya Adarsh (adityai81011@gmail.com)
 
 ---
@@ -16,7 +16,7 @@ CarryKaro is a peer-to-peer package delivery platform. Senders post delivery req
 | Service | URL |
 |---|---|
 | Frontend | https://carrykaro.live |
-| Backend API | Render (Docker) — auto-deploy from `main` |
+| Backend API | https://carrykaro-0zpp.onrender.com — auto-deploy from `main` |
 | Database | Supabase — project ID: `ciyloumrhebzecfgptzg` |
 
 ---
@@ -29,7 +29,7 @@ CarryKaro is a peer-to-peer package delivery platform. Senders post delivery req
 | Backend | FastAPI (Python) |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth — Google OAuth only |
-| Analytics | PostHog — to be set up (Phase 1) |
+| Analytics | PostHog — project ID: `459564`, US cloud (`us.i.posthog.com`) |
 | Payments | Razorpay — deferred to Phase 2 |
 | KYC | IDfy — deferred to Phase 2 |
 | Frontend deploy | Netlify (auto-deploy from GitHub `main`) |
@@ -59,9 +59,9 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 
 - **Tables:** `users`, `requests`, `trips`, `matches`, `messages`, `payments`
 - **RLS:** enabled on all tables
-- **Migration:** `supabase/migrations/001_initial_schema.sql`
-- **Pending:** Add `route_alerts` table for demand capture (Phase 1)
-- **Pending:** Supabase unique constraints for phone/email (delete duplicates first)
+- **Migration run:** `supabase/migrations/001_initial_schema.sql`
+- **Pending migration:** `supabase/migrations/002_route_alerts.sql` — must be pasted into Supabase SQL Editor manually (CLI not installed)
+- **Pending SQL:** `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` — stale constraint from old phone-OTP era, causes onboarding to fail for users with a phone on their account
 
 ---
 
@@ -136,6 +136,7 @@ For MVP: requests stay `open` indefinitely. Fine until real volume.
 - **Payments deferred** — Razorpay is Phase 2
 - **Status transitions deferred** — requests stay `open`, fine for early users
 - **Netlify + `_redirects`** — `/* /index.html 200` added so React Router works on direct URL access
+- **Env vars baked at build time** — all `VITE_*` vars must be set in Netlify dashboard (not just local `.env`); `.env` is gitignored
 - **Legal/compliance deferred** — significant unresolved questions; Phase 1 is validation only
 - **MatchPage stays a stub for now** — platform is pre-launch validation, not full functionality
 - **No seeded fake data** — route popularity signal only shows when real data exists
@@ -150,9 +151,9 @@ Goal: gauge real demand before building full functionality. Drive traffic, colle
 
 | # | Item | Notes |
 |---|---|---|
-| 1 | PostHog setup | Must go in first — all events tracked from day one |
-| 2 | KYC banner → "Early Access Beta" | 5-min copy change |
-| 3 | Better empty states + Route demand capture | Linked — empty state CTA creates route alert |
+| 1 | ~~PostHog setup~~ | ✅ Done — all events wired, deployed |
+| 2 | ~~KYC banner → "Early Access Beta"~~ | ✅ Done |
+| 3 | ~~Better empty states + Route demand capture~~ | ✅ Code done — run `002_route_alerts.sql` in Supabase to activate |
 | 4 | Enhanced onboarding | Add "Both" role + travel frequency field |
 | 5 | Landing page — How It Works + Why CarryKaro | Conversion copy |
 | 6 | Route popularity signal | Real data only, no seeded numbers |
@@ -188,16 +189,28 @@ Do not touch until Phase 1 metrics justify it:
 
 ---
 
+## Production Bug Fixes (2026-06-10)
+
+All production users were getting "Load Failed" / "Failed to fetch" on the Onboarding page. Root causes found and fixed:
+
+1. **`VITE_API_BASE_URL` missing in Netlify** → fell back to `/api` (no proxy) → fixed by setting env var in Netlify dashboard
+2. **CORS headers missing on error responses** — Starlette's `CORSMiddleware` does not add `Access-Control-Allow-Origin` to `HTTPException` or unhandled exception responses → fixed by adding custom `@app.exception_handler` handlers in `backend/app/main.py`
+3. **`users_phone_unique` constraint in production** — stale unique constraint from old phone-OTP flow caused `POST /users/profile` upsert to crash → fixed by removing `phone` from the upsert payload in `backend/app/routers/users.py`
+
+**Still needed:** Run `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` in Supabase SQL Editor.
+
+---
+
 ## What's NOT Done Yet
 
-- [ ] PostHog analytics setup
-- [ ] Route demand capture (new `route_alerts` Supabase table + empty state CTAs)
+- [x] PostHog analytics setup — all 9 events wired, user identify + reset on auth
+- [x] KYC banner copy → "Early Access Beta" messaging
+- [x] Route demand capture — code done; needs `002_route_alerts.sql` run in Supabase SQL Editor
+- [ ] Drop `users_phone_unique` constraint — run in Supabase SQL Editor
 - [ ] Enhanced onboarding (Both role + travel frequency)
 - [ ] Landing page How It Works + Why CarryKaro sections
 - [ ] Route popularity signal (real data only)
 - [ ] Feedback widget (Tally.so)
 - [ ] MatchPage → "interest captured" confirmation screen
-- [ ] KYC banner copy change
 - [ ] Legal / compliance page
 - [ ] Delete `frontend/src/pages/FontPreview.jsx` (orphaned dev utility)
-- [ ] Supabase unique constraints for phone/email
