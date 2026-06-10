@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { CITIES, formatDate } from '../lib/utils'
+import posthog from '../lib/posthog'
 import Card from '../components/ui/Card'
 import StatusBadge from '../components/ui/StatusBadge'
 
@@ -11,6 +12,7 @@ export default function Browse() {
   const [requests, setRequests] = useState([])
   const [trips, setTrips] = useState([])
   const [filters, setFilters] = useState({ from_city: '', to_city: '' })
+  const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false })
 
   useEffect(() => {
     api.get('/users/profile').catch(err => {
@@ -25,6 +27,7 @@ export default function Browse() {
     } else {
       api.get(`/trips?${params}`).then(setTrips)
     }
+    setAlertForm({ open: false, from_city: '', to_city: '', submitted: false, loading: false })
   }, [tab, filters])
 
   const items = tab === 'requests' ? requests : trips
@@ -62,7 +65,10 @@ export default function Browse() {
         {/* Items */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {items.map(item => (
-            <Card key={item.id} onClick={() => navigate(tab === 'requests' ? `/requests/${item.id}` : `/trips/${item.id}`)}>
+            <Card key={item.id} onClick={() => {
+              posthog.capture('listing_clicked', { listing_type: tab === 'requests' ? 'request' : 'trip', listing_id: item.id, route: `${item.from_city} → ${item.to_city}` })
+              navigate(tab === 'requests' ? `/requests/${item.id}` : `/trips/${item.id}`)
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{item.from_city} → {item.to_city}</div>
@@ -77,14 +83,78 @@ export default function Browse() {
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--saffron)' }}>
-                  {tab === 'requests' ? `₹${item.price_range_min}–${item.price_range_max}` : `Earn ₹${item.earning_range_min}–${item.earning_range_max}`}
+                  {tab === 'requests' ? `Budget: ₹${item.price_range_max}` : `Earn ₹${item.earning_range_min}+`}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--ink-light)' }}>{item.users?.name}</span>
               </div>
             </Card>
           ))}
           {items.length === 0 && (
-            <p style={{ color: 'var(--ink-light)', fontSize: 15 }}>No {tab} found for this corridor yet.</p>
+            <div style={{ gridColumn: '1 / -1' }}>
+              {filters.from_city || filters.to_city ? (
+                <Card style={{ textAlign: 'center', padding: '32px 24px' }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>🗺️</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                    No {tab === 'requests' ? 'delivery requests' : 'trips'} on this route yet
+                  </h3>
+                  <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+                    Be the first to know when someone posts on this corridor.
+                  </p>
+                  {alertForm.submitted ? (
+                    <div style={{ color: 'var(--saffron)', fontWeight: 600, fontSize: 15 }}>
+                      ✓ We'll notify you when a {tab === 'requests' ? 'request' : 'trip'} is posted here.
+                    </div>
+                  ) : alertForm.open ? (
+                    <div style={{ maxWidth: 360, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div className="grid-2" style={{ gap: 10 }}>
+                        {['from_city', 'to_city'].map(key => (
+                          <select key={key} className="input" value={alertForm[key]} onChange={e => setAlertForm(f => ({ ...f, [key]: e.target.value }))}>
+                            <option value="">{key === 'from_city' ? 'From city' : 'To city'}</option>
+                            {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        ))}
+                      </div>
+                      <button
+                        disabled={!alertForm.from_city || !alertForm.to_city || alertForm.loading}
+                        onClick={async () => {
+                          setAlertForm(f => ({ ...f, loading: true }))
+                          await api.post('/route-alerts', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
+                          posthog.capture('route_alert_created', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
+                          setAlertForm(f => ({ ...f, submitted: true, loading: false }))
+                        }}
+                        className="btn btn-primary"
+                        style={{ width: '100%', justifyContent: 'center' }}
+                      >
+                        {alertForm.loading ? 'Saving…' : 'Notify me'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setAlertForm(f => ({ ...f, open: true, from_city: filters.from_city, to_city: filters.to_city }))}
+                    >
+                      Notify me when one is posted
+                    </button>
+                  )}
+                </Card>
+              ) : (
+                <Card style={{ textAlign: 'center', padding: '32px 24px' }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>📦</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                    No {tab === 'requests' ? 'delivery requests' : 'trips'} yet
+                  </h3>
+                  <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 24 }}>
+                    Be the first to post on CarryKaro.
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => navigate(tab === 'requests' ? '/post-request' : '/post-trip')}
+                  >
+                    {tab === 'requests' ? 'Post a delivery request' : 'Post a trip'}
+                  </button>
+                </Card>
+              )}
+            </div>
           )}
         </div>
       </div>

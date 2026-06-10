@@ -1,4 +1,4 @@
-export default function Input({ label, name, type = 'text', value, onChange, placeholder, required }) {
+export default function Input({ label, name, type = 'text', value, onChange, placeholder, required, ...rest }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <label className="label" htmlFor={name}>{label}</label>}
@@ -11,6 +11,7 @@ export default function Input({ label, name, type = 'text', value, onChange, pla
         placeholder={placeholder}
         required={required}
         className="input"
+        {...rest}
       />
     </div>
   )

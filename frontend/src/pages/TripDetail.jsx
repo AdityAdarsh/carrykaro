@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatDate } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
+import posthog from '../lib/posthog'
 import StatusBadge from '../components/ui/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -19,7 +20,10 @@ export default function TripDetail() {
   const [matched, setMatched] = useState(false)
 
   useEffect(() => {
-    api.get(`/trips/${id}`).then(setTrip).catch(() => navigate('/browse'))
+    api.get(`/trips/${id}`).then(t => {
+      setTrip(t)
+      posthog.capture('listing_viewed', { listing_type: 'trip', listing_id: id, route: `${t.from_city} → ${t.to_city}` })
+    }).catch(() => navigate('/browse'))
     api.get('/requests').then(requests => {
       const mine = requests.filter(r => r.user_id === user?.id && r.status === 'open')
       setMyRequests(mine)
@@ -33,6 +37,7 @@ export default function TripDetail() {
     setError('')
     try {
       const match = await api.post('/matches', { request_id: selectedRequest, trip_id: id })
+      posthog.capture('match_requested', { request_id: selectedRequest, trip_id: id, route: `${trip.from_city} → ${trip.to_city}` })
       setMatched(true)
       setTimeout(() => navigate(`/matches/${match.id}`), 1200)
     } catch (e) {
@@ -63,7 +68,7 @@ export default function TripDetail() {
             <Detail label="Travel date" value={formatDate(trip.travel_date)} />
             <Detail label="Travel mode" value={trip.travel_mode} />
             <Detail label="Spare capacity" value={`${trip.capacity_kg} kg`} />
-            <Detail label="Earning range" value={`₹${trip.earning_range_min}–${trip.earning_range_max}`} />
+            <Detail label="Min earning" value={`₹${trip.earning_range_min}+`} />
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, fontSize: 13, color: 'var(--ink-light)' }}>

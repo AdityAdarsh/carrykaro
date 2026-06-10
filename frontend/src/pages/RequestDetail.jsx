@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatDate } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
+import posthog from '../lib/posthog'
 import StatusBadge from '../components/ui/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -19,7 +20,10 @@ export default function RequestDetail() {
   const [matched, setMatched] = useState(false)
 
   useEffect(() => {
-    api.get(`/requests/${id}`).then(setRequest).catch(() => navigate('/browse'))
+    api.get(`/requests/${id}`).then(r => {
+      setRequest(r)
+      posthog.capture('listing_viewed', { listing_type: 'request', listing_id: id, route: `${r.from_city} → ${r.to_city}` })
+    }).catch(() => navigate('/browse'))
     api.get('/trips').then(trips => {
       const mine = trips.filter(t => t.user_id === user?.id && t.status === 'open')
       setMyTrips(mine)
@@ -33,6 +37,7 @@ export default function RequestDetail() {
     setError('')
     try {
       const match = await api.post('/matches', { request_id: id, trip_id: selectedTrip })
+      posthog.capture('match_requested', { request_id: id, trip_id: selectedTrip, route: `${request.from_city} → ${request.to_city}` })
       setMatched(true)
       setTimeout(() => navigate(`/matches/${match.id}`), 1200)
     } catch (e) {
@@ -63,7 +68,7 @@ export default function RequestDetail() {
             <Detail label="Item type" value={request.item_type} />
             <Detail label="Weight" value={`${request.weight_kg} kg`} />
             <Detail label="Needed by" value={formatDate(request.needed_by_date)} />
-            <Detail label="Budget" value={`₹${request.price_range_min}–${request.price_range_max}`} />
+            <Detail label="Budget" value={`₹${request.price_range_max}`} />
           </div>
 
           {request.description && (

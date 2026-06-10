@@ -1,13 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
 import { CITIES } from '../lib/utils'
+import posthog from '../lib/posthog'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 
 export default function Onboarding() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', city: '', role: '' })
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const googleName = session?.user?.user_metadata?.full_name || ''
+      if (googleName) setForm(f => ({ ...f, name: googleName }))
+    })
+  }, [])
   const [loading, setLoading] = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -20,6 +29,7 @@ export default function Onboarding() {
     setError(null)
     try {
       await api.post('/users/profile', form)
+      posthog.capture('role_selected', { role: form.role })
       navigate('/browse')
     } catch (err) {
       setError(err.message || 'Something went wrong. Try again.')
