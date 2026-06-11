@@ -1,6 +1,6 @@
 # CarryKaro — Project Brief
 
-**Last updated:** 2026-06-10
+**Last updated:** 2026-06-11
 **Owner:** Aditya Adarsh (adityai81011@gmail.com)
 
 ---
@@ -72,14 +72,15 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 | `/` | Landing / Home | Done — needs How It Works + Why CarryKaro sections |
 | `/login` | Google OAuth sign-in | Done |
 | `/onboarding` | Name, city, role setup | Done — needs Both role + travel frequency |
-| `/browse` | Browse requests & trips with city filters | Done — needs better empty states |
-| `/requests/:id` | Request detail + carrier match flow | Done |
-| `/trips/:id` | Trip detail + sender match flow | Done |
+| `/browse` | Browse requests & trips with city filters | Done |
+| `/requests/:id` | Request detail + carrier match flow + delete | Done |
+| `/trips/:id` | Trip detail + sender match flow + delete | Done |
 | `/post-request` | Post a delivery request | Done |
 | `/post-trip` | Post a trip | Done |
-| `/profile` | View/edit profile | Done |
+| `/profile` | View/edit profile + sign out | Done |
+| `/messages` | Messages inbox — all chat threads with unread indicators | Done |
+| `/chat/:matchId` | Real-time chat | Done |
 | `/matches/:matchId` | Match detail | Stub — needs "interest captured" confirmation screen |
-| `/chat/:matchId` | Chat | Deferred to Phase 2 |
 
 ---
 
@@ -91,6 +92,26 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 - Supabase URL Config must have:
   - Site URL: `https://carrykaro.live`
   - Redirect URL: `https://carrykaro.live/**`
+
+---
+
+## Navigation
+
+- **Top nav (all screens):** CarryKaro logo (left) · 💬 Messages icon with unread badge · 🔔 Notifications bell with badge (right)
+- **Desktop:** additional Browse / Send / Carry / Profile text links in top nav
+- **Mobile:** bottom tab bar — Browse / Send / Carry / Profile
+- **Sign out:** inside Profile page, not in nav
+- **Notifications bell shows:** new match interest on your listing, your match accepted, your match declined
+- **Messages badge:** live unread message count via Supabase Realtime; clears on visiting `/messages`
+
+---
+
+## Notifications & Messaging Architecture
+
+- `useNotifications` hook (frontend): fetches user's matches on mount, derives notifications from match status + ownership, subscribes to Supabase Realtime `postgres_changes` on `messages` table per match
+- Seen state persisted in `localStorage`: `notif_seen_{matchId}`, `chat_last_read_{matchId}`
+- Active chat detection via `window.location.pathname` — no badge increment if user is already on that chat
+- `MessagesPage` fetches `/matches/my` + last message per match in parallel; shows unread dot if last message is from other party and newer than `chat_last_read_{matchId}`
 
 ---
 
@@ -111,6 +132,26 @@ Trip:     open → matched → completed / cancelled
 - Confirm delivery + payout ❌ (deferred to Phase 2)
 
 For MVP: requests stay `open` indefinitely. Fine until real volume.
+
+---
+
+## Delete Listing
+
+- **RequestDetail + TripDetail:** Delete button shown to owner only
+- **Guard:** Backend returns 409 if an accepted match exists — user sees inline error "You have an active match on this listing"
+- **On success:** soft-delete (sets status to `cancelled`), redirects to Browse
+- **Endpoints:** `DELETE /requests/:id` and `DELETE /trips/:id` — both on backend
+
+---
+
+## Form Validation
+
+- **Weight / capacity:** dropdown select 1–10 kg (not free-text)
+- **Same city guard:** submit disabled with inline error if from_city === to_city
+- **Date:** `min={today}`, inline error if past date selected
+- **Budget (sender):** single field, value written to both `price_range_min` and `price_range_max` in DB
+- **Min earning (carrier):** single field, value written to both `earning_range_min` and `earning_range_max` in DB
+- **Onboarding name:** pre-filled from Google `user_metadata.full_name`, still editable
 
 ---
 
@@ -140,6 +181,10 @@ For MVP: requests stay `open` indefinitely. Fine until real volume.
 - **Legal/compliance deferred** — significant unresolved questions; Phase 1 is validation only
 - **MatchPage stays a stub for now** — platform is pre-launch validation, not full functionality
 - **No seeded fake data** — route popularity signal only shows when real data exists
+- **Chat opens on `requested` status** — as soon as carrier expresses interest, not waiting for acceptance
+- **Delete only, no edit** — if user made a mistake, delete and repost; edit deferred (complex with active matches)
+- **No staging environment yet** — direct-to-prod acceptable until real users exist; set up staging (second Supabase project + Netlify site on `staging` branch) when user base reaches ~10–20
+- **Photo upload hidden** — disabled for Phase 1; will re-enable with client-side compression in Phase 2
 
 ---
 
@@ -149,16 +194,19 @@ Goal: gauge real demand before building full functionality. Drive traffic, colle
 
 **Build order:**
 
-| # | Item | Notes |
+| # | Item | Status |
 |---|---|---|
-| 1 | ~~PostHog setup~~ | ✅ Done — all events wired, deployed |
-| 2 | ~~KYC banner → "Early Access Beta"~~ | ✅ Done |
-| 3 | ~~Better empty states + Route demand capture~~ | ✅ Code done — run `002_route_alerts.sql` in Supabase to activate |
-| 4 | Enhanced onboarding | Add "Both" role + travel frequency field |
-| 5 | Landing page — How It Works + Why CarryKaro | Conversion copy |
-| 6 | Route popularity signal | Real data only, no seeded numbers |
-| 7 | Feedback widget | Use Tally.so embed, not custom build |
-| 8 | Verify all PostHog events firing | Check PostHog dashboard |
+| 1 | PostHog setup | ✅ Done — all events wired, deployed |
+| 2 | KYC banner → "Early Access Beta" | ✅ Done |
+| 3 | Better empty states + Route demand capture | ✅ Code done — run `002_route_alerts.sql` in Supabase to activate |
+| 4 | Form validation + UX polish | ✅ Done — dropdowns, same-city guard, single price fields, name prefill |
+| 5 | Chat + Messages inbox + Notifications | ✅ Done — real-time chat, `/messages` inbox, bell + badge in nav |
+| 6 | Delete listing | ✅ Done — with accepted-match guard |
+| 7 | Enhanced onboarding | ⬜ Add "Both" role + travel frequency field |
+| 8 | Landing page — How It Works + Why CarryKaro | ⬜ Conversion copy |
+| 9 | Route popularity signal | ⬜ Real data only, no seeded numbers (depends on #3 SQL being run) |
+| 10 | Feedback widget | ⬜ Tally.so embed — needs Tally form ID from Aditya |
+| 11 | MatchPage confirmation screen | ⬜ "Interest captured" screen instead of stub |
 
 **PostHog events to track:**
 `landing_page_visit`, `get_started_click`, `signup_completed`, `role_selected`, `request_posted`, `trip_posted`, `listing_viewed`, `listing_clicked`, `match_requested`, `route_alert_created`, `feedback_submitted`
@@ -180,13 +228,22 @@ Do not touch until Phase 1 metrics justify it:
 - KYC / IDfy
 - Insurance
 - Ratings / Reviews / Verification badges
-- Chat (full implementation)
 - Delivery OTP
 - Dispute management
 - Fraud detection
 - Custom admin dashboard
-- Request/trip status transitions
+- Request/trip status transitions (in_transit, delivered, completed)
 - **Item photos** — upload input is hidden in PostRequest for now. When re-enabling: add `browser-image-compression` (client-side, silent, ≤1MB target), show thumbnail preview after pick, display photo strip in RequestDetail. Code is already in place, just commented out.
+- **PRD** — to be written after Phase 1 testing; will capture validated decisions and inform Phase 2 scope
+
+---
+
+## Pending Manual Actions (Supabase SQL Editor)
+
+These must be run manually — Supabase CLI not installed:
+
+1. `supabase/migrations/002_route_alerts.sql` — paste full file into SQL Editor to activate route alerts + demand capture
+2. `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` — removes stale constraint that causes onboarding failures
 
 ---
 
@@ -198,20 +255,16 @@ All production users were getting "Load Failed" / "Failed to fetch" on the Onboa
 2. **CORS headers missing on error responses** — Starlette's `CORSMiddleware` does not add `Access-Control-Allow-Origin` to `HTTPException` or unhandled exception responses → fixed by adding custom `@app.exception_handler` handlers in `backend/app/main.py`
 3. **`users_phone_unique` constraint in production** — stale unique constraint from old phone-OTP flow caused `POST /users/profile` upsert to crash → fixed by removing `phone` from the upsert payload in `backend/app/routers/users.py`
 
-**Still needed:** Run `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` in Supabase SQL Editor.
-
 ---
 
-## What's NOT Done Yet
+## What's NOT Done Yet (Phase 1 remaining)
 
-- [x] PostHog analytics setup — all 9 events wired, user identify + reset on auth
-- [x] KYC banner copy → "Early Access Beta" messaging
-- [x] Route demand capture — code done; needs `002_route_alerts.sql` run in Supabase SQL Editor
-- [ ] Drop `users_phone_unique` constraint — run in Supabase SQL Editor
+- [ ] Run `002_route_alerts.sql` in Supabase SQL Editor
+- [ ] Run `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` in Supabase SQL Editor
 - [ ] Enhanced onboarding (Both role + travel frequency)
 - [ ] Landing page How It Works + Why CarryKaro sections
 - [ ] Route popularity signal (real data only)
-- [ ] Feedback widget (Tally.so)
+- [ ] Feedback widget (Tally.so — needs form ID)
 - [ ] MatchPage → "interest captured" confirmation screen
-- [ ] Legal / compliance page
 - [ ] Delete `frontend/src/pages/FontPreview.jsx` (orphaned dev utility)
+- [ ] Legal / compliance page
