@@ -1,6 +1,6 @@
 # CarryKaro — Project Brief
 
-**Last updated:** 2026-06-11
+**Last updated:** 2026-06-12
 **Owner:** Aditya Adarsh (adityai81011@gmail.com)
 
 ---
@@ -57,11 +57,11 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 
 ## Database
 
-- **Tables:** `users`, `requests`, `trips`, `matches`, `messages`, `payments`
+- **Tables:** `users`, `requests`, `trips`, `matches`, `messages`, `payments`, `route_alerts`
 - **RLS:** enabled on all tables
-- **Migration run:** `supabase/migrations/001_initial_schema.sql`
-- **Pending migration:** `supabase/migrations/002_route_alerts.sql` — must be pasted into Supabase SQL Editor manually (CLI not installed)
-- **Pending SQL:** `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` — stale constraint from old phone-OTP era, causes onboarding to fail for users with a phone on their account
+- **Migrations run:** `001_initial_schema.sql`, `002_route_alerts.sql`
+- **Pending migration:** `supabase/migrations/003_stub_and_match_count.sql` — adds `is_stub` column to `trips` and `requests`; must be pasted into Supabase SQL Editor manually (CLI not installed)
+- **Note:** `users_phone_unique` constraint intentionally kept — phone verification planned for Phase 2
 
 ---
 
@@ -72,15 +72,15 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 | `/` | Landing / Home | Done — needs How It Works + Why CarryKaro sections |
 | `/login` | Google OAuth sign-in | Done |
 | `/onboarding` | Name, city, role setup | Done — needs Both role + travel frequency |
-| `/browse` | Browse requests & trips with city filters | Done |
-| `/requests/:id` | Request detail + carrier match flow + delete | Done |
-| `/trips/:id` | Trip detail + sender match flow + delete | Done |
+| `/browse` | Browse requests & trips & My Listings (3 tabs) | Done |
+| `/requests/:id` | Request detail + one-tap carrier interest + delete | Done |
+| `/trips/:id` | Trip detail + one-tap sender interest + delete | Done |
 | `/post-request` | Post a delivery request | Done |
 | `/post-trip` | Post a trip | Done |
 | `/profile` | View/edit profile + sign out | Done |
 | `/messages` | Messages inbox — all chat threads with unread indicators | Done |
 | `/chat/:matchId` | Real-time chat | Done |
-| `/matches/:matchId` | Match detail | Stub — needs "interest captured" confirmation screen |
+| `/matches/:matchId` | Match detail | Stub — kept for Phase 2 lifecycle (accept/reject, status tracking) |
 
 ---
 
@@ -179,7 +179,7 @@ For MVP: requests stay `open` indefinitely. Fine until real volume.
 - **Netlify + `_redirects`** — `/* /index.html 200` added so React Router works on direct URL access
 - **Env vars baked at build time** — all `VITE_*` vars must be set in Netlify dashboard (not just local `.env`); `.env` is gitignored
 - **Legal/compliance deferred** — significant unresolved questions; Phase 1 is validation only
-- **MatchPage stays a stub for now** — platform is pre-launch validation, not full functionality
+- **MatchPage stays a stub** — kept for Phase 2 (accept/reject flow, match lifecycle); after a match is created users go directly to `/chat/:matchId`
 - **No seeded fake data** — route popularity signal only shows when real data exists
 - **Chat opens on `requested` status** — as soon as carrier expresses interest, not waiting for acceptance
 - **Delete only, no edit** — if user made a mistake, delete and repost; edit deferred (complex with active matches)
@@ -198,15 +198,18 @@ Goal: gauge real demand before building full functionality. Drive traffic, colle
 |---|---|---|
 | 1 | PostHog setup | ✅ Done — all events wired, deployed |
 | 2 | KYC banner → "Early Access Beta" | ✅ Done |
-| 3 | Better empty states + Route demand capture | ✅ Code done — run `002_route_alerts.sql` in Supabase to activate |
+| 3 | Better empty states + Route demand capture | ✅ Done — `002_route_alerts.sql` run in Supabase |
 | 4 | Form validation + UX polish | ✅ Done — dropdowns, same-city guard, single price fields, name prefill |
 | 5 | Chat + Messages inbox + Notifications | ✅ Done — real-time chat, `/messages` inbox, bell + badge in nav |
 | 6 | Delete listing | ✅ Done — with accepted-match guard |
-| 7 | Enhanced onboarding | ⬜ Add "Both" role + travel frequency field |
-| 8 | Landing page — How It Works + Why CarryKaro | ⬜ Conversion copy |
-| 9 | Route popularity signal | ⬜ Real data only, no seeded numbers (depends on #3 SQL being run) |
-| 10 | Feedback widget | ⬜ Tally.so embed — needs Tally form ID from Aditya |
-| 11 | MatchPage confirmation screen | ⬜ "Interest captured" screen instead of stub |
+| 7 | One-tap express interest (no pre-posting required) | ✅ Done — stub listing pattern, smart route detection |
+| 8 | Stub listings hidden from Browse | ✅ Done — `is_stub` flag; run `003_stub_and_match_count.sql` in Supabase to activate |
+| 9 | Match interest count on listings | ✅ Done — "X interested" badge on Browse cards + detail pages |
+| 10 | My Listings tab in Browse | ✅ Done — mark-as-matched + delete actions inline |
+| 11 | Enhanced onboarding | ⬜ Add "Both" role + travel frequency field |
+| 12 | Landing page — How It Works + Why CarryKaro | ⬜ Conversion copy |
+| 13 | Route popularity signal | ⬜ Real data only, no seeded numbers |
+| 14 | Feedback widget | ⬜ Tally.so embed — needs Tally form ID from Aditya |
 
 **PostHog events to track:**
 `landing_page_visit`, `get_started_click`, `signup_completed`, `role_selected`, `request_posted`, `trip_posted`, `listing_viewed`, `listing_clicked`, `match_requested`, `route_alert_created`, `feedback_submitted`
@@ -242,8 +245,7 @@ Do not touch until Phase 1 metrics justify it:
 
 These must be run manually — Supabase CLI not installed:
 
-1. `supabase/migrations/002_route_alerts.sql` — paste full file into SQL Editor to activate route alerts + demand capture
-2. `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` — removes stale constraint that causes onboarding failures
+1. `supabase/migrations/003_stub_and_match_count.sql` — adds `is_stub` to trips + requests; Browse will error without it
 
 ---
 
@@ -259,12 +261,9 @@ All production users were getting "Load Failed" / "Failed to fetch" on the Onboa
 
 ## What's NOT Done Yet (Phase 1 remaining)
 
-- [ ] Run `002_route_alerts.sql` in Supabase SQL Editor
-- [ ] Run `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique;` in Supabase SQL Editor
+- [ ] Run `003_stub_and_match_count.sql` in Supabase SQL Editor (critical — Browse breaks without it)
 - [ ] Enhanced onboarding (Both role + travel frequency)
 - [ ] Landing page How It Works + Why CarryKaro sections
 - [ ] Route popularity signal (real data only)
-- [ ] Feedback widget (Tally.so — needs form ID)
-- [ ] MatchPage → "interest captured" confirmation screen
-- [ ] Delete `frontend/src/pages/FontPreview.jsx` (orphaned dev utility)
+- [ ] Feedback widget (Tally.so — needs form ID from Aditya)
 - [ ] Legal / compliance page
