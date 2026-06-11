@@ -64,7 +64,7 @@ export default function RequestDetail() {
       const match = await api.post('/matches', { request_id: id, trip_id: resolvedTripId })
       posthog.capture('match_requested', { request_id: id, trip_id: resolvedTripId, route: `${request.from_city} → ${request.to_city}` })
       setMatched(true)
-      setTimeout(() => navigate(`/matches/${match.id}`), 1200)
+      setTimeout(() => navigate(`/chat/${match.id}`), 1200)
     } catch (e) {
       setError(e.message)
       setLoading(false)
