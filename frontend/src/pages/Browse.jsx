@@ -4,7 +4,6 @@ import { api } from '../lib/api'
 import { CITIES, formatDate } from '../lib/utils'
 import posthog from '../lib/posthog'
 import Card from '../components/ui/Card'
-import StatusBadge from '../components/ui/StatusBadge'
 
 export default function Browse() {
   const navigate = useNavigate()
@@ -69,14 +68,11 @@ export default function Browse() {
               posthog.capture('listing_clicked', { listing_type: tab === 'requests' ? 'request' : 'trip', listing_id: item.id, route: `${item.from_city} → ${item.to_city}` })
               navigate(tab === 'requests' ? `/requests/${item.id}` : `/trips/${item.id}`)
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{item.from_city} → {item.to_city}</div>
-                  <div style={{ fontSize: 13, color: 'var(--ink-light)', marginTop: 2 }}>
-                    {tab === 'requests' ? `${item.item_type} · ${item.weight_kg}kg · by ${formatDate(item.needed_by_date)}` : `${item.travel_mode} · ${item.capacity_kg}kg free · ${formatDate(item.travel_date)}`}
-                  </div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{item.from_city} → {item.to_city}</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-light)', marginTop: 2 }}>
+                  {tab === 'requests' ? `${item.item_type} · ${item.weight_kg}kg · by ${formatDate(item.needed_by_date)}` : `${item.travel_mode} · ${item.capacity_kg}kg free · ${formatDate(item.travel_date)}`}
                 </div>
-                <StatusBadge status={item.status} />
               </div>
               {tab === 'requests' && item.description && (
                 <p style={{ fontSize: 13, color: 'var(--ink-mid)', marginBottom: 12 }}>"{item.description}"</p>
