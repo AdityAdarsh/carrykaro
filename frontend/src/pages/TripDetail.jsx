@@ -1,37 +1,39 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatDate } from '../lib/utils'
+import { formatDate, ITEM_TYPES } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
 import posthog from '../lib/posthog'
 import StatusBadge from '../components/ui/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 
+const WEIGHT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const today = new Date().toISOString().split('T')[0]
+
 export default function TripDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [trip, setTrip] = useState(null)
-  const [myRequests, setMyRequests] = useState([])
-  const [selectedRequest, setSelectedRequest] = useState('')
+  const [matched, setMatched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [matched, setMatched] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [reqForm, setReqForm] = useState({ item_type: '', weight_kg: '', price_range_max: '', needed_by_date: '', description: '' })
 
   useEffect(() => {
     api.get(`/trips/${id}`).then(t => {
       setTrip(t)
+      setReqForm(f => ({
+        ...f,
+        price_range_max: t.earning_range_min ?? '',
+        needed_by_date: t.travel_date ?? '',
+      }))
       posthog.capture('listing_viewed', { listing_type: 'trip', listing_id: id, route: `${t.from_city} → ${t.to_city}` })
     }).catch(() => navigate('/browse'))
-    api.get('/requests').then(requests => {
-      const mine = requests.filter(r => r.user_id === user?.id && r.status === 'open')
-      setMyRequests(mine)
-      if (mine.length > 0) setSelectedRequest(mine[0].id)
-    })
-  }, [id, user])
+  }, [id])
 
   const deleteTrip = async () => {
     if (!window.confirm('Delete this trip? This cannot be undone.')) return
@@ -46,21 +48,34 @@ export default function TripDetail() {
     }
   }
 
-  const expressInterest = async () => {
-    if (!selectedRequest) return
+  const expressInterest = async (e) => {
+    e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const match = await api.post('/matches', { request_id: selectedRequest, trip_id: id })
-      posthog.capture('match_requested', { request_id: selectedRequest, trip_id: id, route: `${trip.from_city} → ${trip.to_city}` })
+      const budget = parseInt(reqForm.price_range_max)
+      const request = await api.post('/requests', {
+        from_city: trip.from_city,
+        to_city: trip.to_city,
+        item_type: reqForm.item_type,
+        weight_kg: parseFloat(reqForm.weight_kg),
+        needed_by_date: reqForm.needed_by_date,
+        description: reqForm.description || '',
+        price_range_min: budget,
+        price_range_max: budget,
+        photo_urls: [],
+      })
+      const match = await api.post('/matches', { request_id: request.id, trip_id: id })
+      posthog.capture('match_requested', { request_id: request.id, trip_id: id, route: `${trip.from_city} → ${trip.to_city}` })
       setMatched(true)
       setTimeout(() => navigate(`/matches/${match.id}`), 1200)
     } catch (e) {
       setError(e.message)
-    } finally {
       setLoading(false)
     }
   }
+
+  const set = (k, v) => setReqForm(f => ({ ...f, [k]: v }))
 
   if (!trip) return <main style={{ paddingTop: 120, textAlign: 'center', color: 'var(--ink-light)' }}>Loading…</main>
 
@@ -91,47 +106,59 @@ export default function TripDetail() {
           </div>
         </Card>
 
-        {trip.status === 'open' && (
-          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Need to send something?</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Send a package on this trip</div>
-            </div>
-            <button onClick={() => navigate('/post-request')} style={{ background: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'var(--saffron)', whiteSpace: 'nowrap', marginLeft: 16 }}>
-              Send a package →
-            </button>
-          </div>
-        )}
-
         {!isOwn && trip.status === 'open' && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 24 }}>
             {matched ? (
               <Card style={{ textAlign: 'center', color: 'var(--saffron)', fontWeight: 700 }}>
                 Match created! Taking you there…
               </Card>
-            ) : myRequests.length === 0 ? (
-              <Card>
-                <p style={{ fontSize: 14, color: 'var(--ink-mid)', marginBottom: 16 }}>
-                  You need an open delivery request to send something on this trip.
-                </p>
-                <Button onClick={() => navigate('/post-request')}>Post a request →</Button>
-              </Card>
             ) : (
               <Card>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Send something on this trip</h2>
-                <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 16 }}>Select which of your requests matches this route.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                  {myRequests.map(r => (
-                    <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14 }}>
-                      <input type="radio" name="request" value={r.id} checked={selectedRequest === r.id} onChange={() => setSelectedRequest(r.id)} />
-                      {r.from_city} → {r.to_city} · {r.item_type} · {r.weight_kg}kg · by {formatDate(r.needed_by_date)}
-                    </label>
-                  ))}
-                </div>
-                {error && <p style={{ color: 'red', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-                <Button onClick={expressInterest} disabled={loading || !selectedRequest}>
-                  {loading ? 'Sending…' : 'Express interest'}
-                </Button>
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>I want to send via this trip</h2>
+                <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 20 }}>
+                  Tell us what you need carried on the {trip.from_city} → {trip.to_city} route.
+                </p>
+
+                <form onSubmit={expressInterest} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="grid-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Item type</label>
+                      <select className="input" value={reqForm.item_type} onChange={e => set('item_type', e.target.value)} required>
+                        <option value="">Select type</option>
+                        {ITEM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Weight</label>
+                      <select className="input" value={reqForm.weight_kg} onChange={e => set('weight_kg', e.target.value)} required>
+                        <option value="">Select weight</option>
+                        {WEIGHT_OPTIONS.map(w => <option key={w} value={w}>{w} kg</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Needed by</label>
+                      <input type="date" className="input" value={reqForm.needed_by_date} onChange={e => set('needed_by_date', e.target.value)} required min={today} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Budget (₹)</label>
+                      <input type="number" className="input" value={reqForm.price_range_max} onChange={e => set('price_range_max', e.target.value)} placeholder="e.g. 300" required min="1" />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="label">Description</label>
+                    <textarea className="input" rows={2} value={reqForm.description} onChange={e => set('description', e.target.value)} placeholder="What is it? Any handling notes?" required style={{ resize: 'vertical' }} />
+                  </div>
+
+                  {error && <p style={{ color: '#e53e3e', fontSize: 13 }}>{error}</p>}
+
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating match…' : 'Express interest'}
+                  </Button>
+                </form>
               </Card>
             )}
           </div>

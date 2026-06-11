@@ -1,37 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatDate } from '../lib/utils'
+import { formatDate, TRAVEL_MODES } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
 import posthog from '../lib/posthog'
 import StatusBadge from '../components/ui/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 
+const CAPACITY_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const today = new Date().toISOString().split('T')[0]
+
 export default function RequestDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [request, setRequest] = useState(null)
-  const [myTrips, setMyTrips] = useState([])
-  const [selectedTrip, setSelectedTrip] = useState('')
+  const [matched, setMatched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [matched, setMatched] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [tripForm, setTripForm] = useState({ travel_date: '', travel_mode: '', capacity_kg: '', earning_range_min: '' })
 
   useEffect(() => {
     api.get(`/requests/${id}`).then(r => {
       setRequest(r)
+      setTripForm(f => ({ ...f, earning_range_min: r.price_range_max ?? '' }))
       posthog.capture('listing_viewed', { listing_type: 'request', listing_id: id, route: `${r.from_city} → ${r.to_city}` })
     }).catch(() => navigate('/browse'))
-    api.get('/trips').then(trips => {
-      const mine = trips.filter(t => t.user_id === user?.id && t.status === 'open')
-      setMyTrips(mine)
-      if (mine.length > 0) setSelectedTrip(mine[0].id)
-    })
-  }, [id, user])
+  }, [id])
 
   const deleteRequest = async () => {
     if (!window.confirm('Delete this request? This cannot be undone.')) return
@@ -46,21 +44,32 @@ export default function RequestDetail() {
     }
   }
 
-  const expressInterest = async () => {
-    if (!selectedTrip) return
+  const expressInterest = async (e) => {
+    e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const match = await api.post('/matches', { request_id: id, trip_id: selectedTrip })
-      posthog.capture('match_requested', { request_id: id, trip_id: selectedTrip, route: `${request.from_city} → ${request.to_city}` })
+      const minEarning = parseInt(tripForm.earning_range_min)
+      const trip = await api.post('/trips', {
+        from_city: request.from_city,
+        to_city: request.to_city,
+        travel_date: tripForm.travel_date,
+        travel_mode: tripForm.travel_mode,
+        capacity_kg: parseFloat(tripForm.capacity_kg),
+        earning_range_min: minEarning,
+        earning_range_max: minEarning,
+      })
+      const match = await api.post('/matches', { request_id: id, trip_id: trip.id })
+      posthog.capture('match_requested', { request_id: id, trip_id: trip.id, route: `${request.from_city} → ${request.to_city}` })
       setMatched(true)
       setTimeout(() => navigate(`/matches/${match.id}`), 1200)
     } catch (e) {
       setError(e.message)
-    } finally {
       setLoading(false)
     }
   }
+
+  const set = (k, v) => setTripForm(f => ({ ...f, [k]: v }))
 
   if (!request) return <main style={{ paddingTop: 120, textAlign: 'center', color: 'var(--ink-light)' }}>Loading…</main>
 
@@ -98,47 +107,54 @@ export default function RequestDetail() {
           </div>
         </Card>
 
-        {request.status === 'open' && (
-          <div style={{ marginTop: 24, background: 'var(--saffron)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Travelling this route?</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Carry this package and earn money</div>
-            </div>
-            <button onClick={() => navigate('/post-trip')} style={{ background: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'var(--saffron)', whiteSpace: 'nowrap', marginLeft: 16 }}>
-              Carry a package →
-            </button>
-          </div>
-        )}
-
         {!isOwn && request.status === 'open' && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 24 }}>
             {matched ? (
               <Card style={{ textAlign: 'center', color: 'var(--saffron)', fontWeight: 700 }}>
                 Match created! Taking you there…
               </Card>
-            ) : myTrips.length === 0 ? (
-              <Card>
-                <p style={{ fontSize: 14, color: 'var(--ink-mid)', marginBottom: 16 }}>
-                  You need an active trip to carry this. Post your trip first.
-                </p>
-                <Button onClick={() => navigate(`/post-trip`)}>Post a trip →</Button>
-              </Card>
             ) : (
               <Card>
                 <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>I can carry this</h2>
-                <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 16 }}>Select which of your trips matches this route.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                  {myTrips.map(t => (
-                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14 }}>
-                      <input type="radio" name="trip" value={t.id} checked={selectedTrip === t.id} onChange={() => setSelectedTrip(t.id)} />
-                      {t.from_city} → {t.to_city} · {formatDate(t.travel_date)} · {t.capacity_kg}kg free
-                    </label>
-                  ))}
-                </div>
-                {error && <p style={{ color: 'red', fontSize: 13, marginBottom: 12 }}>{error}</p>}
-                <Button onClick={expressInterest} disabled={loading || !selectedTrip}>
-                  {loading ? 'Sending…' : 'Express interest'}
-                </Button>
+                <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 20 }}>
+                  Tell us about your trip on the {request.from_city} → {request.to_city} route.
+                </p>
+
+                <form onSubmit={expressInterest} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="grid-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Travel date</label>
+                      <input type="date" className="input" value={tripForm.travel_date} onChange={e => set('travel_date', e.target.value)} required min={today} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Travel mode</label>
+                      <select className="input" value={tripForm.travel_mode} onChange={e => set('travel_mode', e.target.value)} required>
+                        <option value="">Select mode</option>
+                        {TRAVEL_MODES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Spare capacity</label>
+                      <select className="input" value={tripForm.capacity_kg} onChange={e => set('capacity_kg', e.target.value)} required>
+                        <option value="">Select capacity</option>
+                        {CAPACITY_OPTIONS.map(w => <option key={w} value={w}>{w} kg</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label className="label">Min earning (₹)</label>
+                      <input type="number" className="input" value={tripForm.earning_range_min} onChange={e => set('earning_range_min', e.target.value)} placeholder="e.g. 200" required min="1" />
+                    </div>
+                  </div>
+
+                  {error && <p style={{ color: '#e53e3e', fontSize: 13 }}>{error}</p>}
+
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating match…' : 'Express interest'}
+                  </Button>
+                </form>
               </Card>
             )}
           </div>
