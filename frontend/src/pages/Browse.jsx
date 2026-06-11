@@ -12,7 +12,7 @@ export default function Browse() {
   const [requests, setRequests] = useState([])
   const [trips, setTrips] = useState([])
   const [filters, setFilters] = useState({ from_city: '', to_city: '' })
-  const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false })
+  const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false, error: null })
 
   useEffect(() => {
     api.get('/users/profile').catch(err => {
@@ -114,13 +114,20 @@ export default function Browse() {
                           </select>
                         ))}
                       </div>
+                      {alertForm.error && (
+                        <p style={{ fontSize: 13, color: '#c0392b', textAlign: 'center' }}>{alertForm.error}</p>
+                      )}
                       <button
                         disabled={!alertForm.from_city || !alertForm.to_city || alertForm.loading}
                         onClick={async () => {
-                          setAlertForm(f => ({ ...f, loading: true }))
-                          await api.post('/route-alerts', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
-                          posthog.capture('route_alert_created', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
-                          setAlertForm(f => ({ ...f, submitted: true, loading: false }))
+                          setAlertForm(f => ({ ...f, loading: true, error: null }))
+                          try {
+                            await api.post('/route-alerts', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
+                            posthog.capture('route_alert_created', { from_city: alertForm.from_city, to_city: alertForm.to_city, looking_for: tab === 'requests' ? 'request' : 'trip' })
+                            setAlertForm(f => ({ ...f, submitted: true, loading: false }))
+                          } catch {
+                            setAlertForm(f => ({ ...f, loading: false, error: 'Something went wrong. Please try again.' }))
+                          }
                         }}
                         className="btn btn-primary"
                         style={{ width: '100%', justifyContent: 'center' }}
