@@ -27,6 +27,7 @@ class TripCreate(BaseModel):
     capacity_kg: float
     earning_range_min: int
     earning_range_max: int
+    is_stub: bool = False
 
 
 class Trip(TripCreate):

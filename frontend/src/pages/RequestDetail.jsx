@@ -58,6 +58,7 @@ export default function RequestDetail() {
           capacity_kg: Math.ceil(request.weight_kg),
           earning_range_min: request.price_range_max,
           earning_range_max: request.price_range_max,
+          is_stub: true,
         })
         resolvedTripId = stub.id
       }
@@ -102,8 +103,13 @@ export default function RequestDetail() {
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, fontSize: 13, color: 'var(--ink-light)' }}>
-            Posted by <strong style={{ color: 'var(--ink)' }}>{request.users?.name}</strong> · {request.users?.city}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, fontSize: 13, color: 'var(--ink-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Posted by <strong style={{ color: 'var(--ink)' }}>{request.users?.name}</strong> · {request.users?.city}</span>
+            {request.match_count > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', background: 'var(--green-light)', borderRadius: 6, padding: '2px 8px' }}>
+                {request.match_count} interested
+              </span>
+            )}
           </div>
         </Card>
 

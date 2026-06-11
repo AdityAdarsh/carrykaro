@@ -85,7 +85,14 @@ export default function Browse() {
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--saffron)' }}>
                   {tab === 'requests' ? `Budget: ₹${item.price_range_max}` : `Earn ₹${item.earning_range_min}+`}
                 </span>
-                <span style={{ fontSize: 12, color: 'var(--ink-light)' }}>{item.users?.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {item.match_count > 0 && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', background: 'var(--green-light)', borderRadius: 6, padding: '2px 8px' }}>
+                      {item.match_count} interested
+                    </span>
+                  )}
+                  <span style={{ fontSize: 12, color: 'var(--ink-light)' }}>{item.users?.name}</span>
+                </div>
               </div>
             </Card>
           ))}

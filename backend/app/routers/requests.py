@@ -29,20 +29,26 @@ async def list_requests(
     user=Depends(get_current_user),
 ):
     db = get_supabase()
-    q = db.table("requests").select("*, users(name, city)").eq("status", "open")
+    q = db.table("requests").select("*, users(name, city), matches(count)").eq("status", "open").eq("is_stub", False)
     if from_city:
         q = q.eq("from_city", from_city)
     if to_city:
         q = q.eq("to_city", to_city)
     result = q.order("needed_by_date").execute()
+    for item in result.data:
+        item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+        del item["matches"]
     return result.data
 
 
 @router.get("/{request_id}")
 async def get_request(request_id: str, user=Depends(get_current_user)):
     db = get_supabase()
-    result = db.table("requests").select("*, users(name, city)").eq("id", request_id).single().execute()
-    return result.data
+    result = db.table("requests").select("*, users(name, city), matches(count)").eq("id", request_id).single().execute()
+    item = result.data
+    item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+    del item["matches"]
+    return item
 
 
 @router.delete("/{request_id}")

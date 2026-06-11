@@ -23,20 +23,26 @@ async def list_trips(
     user=Depends(get_current_user),
 ):
     db = get_supabase()
-    q = db.table("trips").select("*, users(name, city)").eq("status", "open")
+    q = db.table("trips").select("*, users(name, city), matches(count)").eq("status", "open").eq("is_stub", False)
     if from_city:
         q = q.eq("from_city", from_city)
     if to_city:
         q = q.eq("to_city", to_city)
     result = q.order("travel_date").execute()
+    for item in result.data:
+        item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+        del item["matches"]
     return result.data
 
 
 @router.get("/{trip_id}")
 async def get_trip(trip_id: str, user=Depends(get_current_user)):
     db = get_supabase()
-    result = db.table("trips").select("*, users(name, city)").eq("id", trip_id).single().execute()
-    return result.data
+    result = db.table("trips").select("*, users(name, city), matches(count)").eq("id", trip_id).single().execute()
+    item = result.data
+    item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+    del item["matches"]
+    return item
 
 
 @router.delete("/{trip_id}")

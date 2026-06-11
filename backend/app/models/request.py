@@ -33,6 +33,7 @@ class DeliveryRequestCreate(BaseModel):
     price_range_min: int
     price_range_max: int
     photo_urls: List[str] = []
+    is_stub: bool = False
 
 
 class DeliveryRequest(DeliveryRequestCreate):

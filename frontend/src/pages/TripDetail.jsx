@@ -60,6 +60,7 @@ export default function TripDetail() {
           price_range_min: trip.earning_range_min,
           price_range_max: trip.earning_range_min,
           photo_urls: [],
+          is_stub: true,
         })
         resolvedRequestId = stub.id
       }
@@ -97,8 +98,13 @@ export default function TripDetail() {
             <Detail label="Min earning" value={`₹${trip.earning_range_min}+`} />
           </div>
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, fontSize: 13, color: 'var(--ink-light)' }}>
-            Posted by <strong style={{ color: 'var(--ink)' }}>{trip.users?.name}</strong> · {trip.users?.city}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, fontSize: 13, color: 'var(--ink-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Posted by <strong style={{ color: 'var(--ink)' }}>{trip.users?.name}</strong> · {trip.users?.city}</span>
+            {trip.match_count > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', background: 'var(--green-light)', borderRadius: 6, padding: '2px 8px' }}>
+                {trip.match_count} interested
+              </span>
+            )}
           </div>
         </Card>
 
