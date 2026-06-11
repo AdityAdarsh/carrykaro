@@ -204,6 +204,21 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 640px) {
   :root { --page-px: 16px; }
 
+  /* Prevent iOS Safari auto-zoom on input focus (triggers when font-size < 16px) */
+  .input,
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Date input: force it to respect container width on iOS */
+  input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   .card { padding: 18px 16px; }
 
   /* push content above the fixed bottom nav */
