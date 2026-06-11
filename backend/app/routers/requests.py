@@ -51,6 +51,18 @@ async def get_request(request_id: str, user=Depends(get_current_user)):
     return item
 
 
+@router.patch("/{request_id}/status")
+async def update_request_status(request_id: str, body: dict, user=Depends(get_current_user)):
+    db = get_supabase()
+    status = body.get("status")
+    if status not in ("matched", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    result = db.table("requests").update({"status": status}).eq("id", request_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Request not found or not yours")
+    return result.data[0]
+
+
 @router.delete("/{request_id}")
 async def cancel_request(request_id: str, user=Depends(get_current_user)):
     db = get_supabase()

@@ -48,3 +48,25 @@ async def update_profile(body: UserProfileUpdate, user=Depends(get_current_user)
     updates = body.model_dump(exclude_none=True)
     result = db.table("users").update(updates).eq("id", user.id).execute()
     return result.data[0]
+
+
+@router.get("/listings")
+async def get_my_listings(user=Depends(get_current_user)):
+    db = get_supabase()
+    trips_result = db.table("trips").select("*, matches(count)").eq("user_id", user.id).neq("status", "cancelled").order("created_at", desc=True).execute()
+    requests_result = db.table("requests").select("*, matches(count)").eq("user_id", user.id).neq("status", "cancelled").order("created_at", desc=True).execute()
+
+    listings = []
+    for item in trips_result.data:
+        item["type"] = "trip"
+        item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+        del item["matches"]
+        listings.append(item)
+    for item in requests_result.data:
+        item["type"] = "request"
+        item["match_count"] = item["matches"][0]["count"] if item.get("matches") else 0
+        del item["matches"]
+        listings.append(item)
+
+    listings.sort(key=lambda x: x["created_at"], reverse=True)
+    return listings

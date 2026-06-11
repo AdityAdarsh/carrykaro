@@ -45,6 +45,18 @@ async def get_trip(trip_id: str, user=Depends(get_current_user)):
     return item
 
 
+@router.patch("/{trip_id}/status")
+async def update_trip_status(trip_id: str, body: dict, user=Depends(get_current_user)):
+    db = get_supabase()
+    status = body.get("status")
+    if status not in ("matched", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    result = db.table("trips").update({"status": status}).eq("id", trip_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Trip not found or not yours")
+    return result.data[0]
+
+
 @router.delete("/{trip_id}")
 async def cancel_trip(trip_id: str, user=Depends(get_current_user)):
     db = get_supabase()
