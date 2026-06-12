@@ -12,6 +12,7 @@ import MessagesPage from './pages/MessagesPage'
 import Profile from './pages/Profile'
 import RequestDetail from './pages/RequestDetail'
 import TripDetail from './pages/TripDetail'
+import ButtonPreview from './pages/ButtonPreview'
 
 function HomeRedirect() {
   const { user, loading } = useAuth()
@@ -34,14 +35,7 @@ function FeedbackButton() {
       data-tally-emoji-text="💬"
       data-tally-emoji-animation="wave"
       data-tally-width="400"
-      style={{
-        position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
-        background: 'var(--saffron)', color: '#fff',
-        border: 'none', borderRadius: 24, padding: '10px 18px',
-        fontSize: 13, fontWeight: 600, cursor: 'pointer',
-        boxShadow: '0 4px 16px rgba(232,96,28,0.35)',
-        display: 'flex', alignItems: 'center', gap: 6,
-      }}
+      className="feedback-btn"
     >
       💬 Feedback
     </button>
@@ -65,6 +59,7 @@ export default function App() {
 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
         <Route path="/chat/:matchId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/button-preview" element={<ButtonPreview />} />
       </Routes>
     </BrowserRouter>
   )

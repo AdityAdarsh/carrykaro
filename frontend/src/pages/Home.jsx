@@ -47,8 +47,8 @@ export default function Home() {
             Someone's already<br />
             <em style={{ fontStyle: 'italic', color: 'var(--saffron)' }}>going your way.</em>
           </h1>
-          <p style={{ fontSize: 18, color: 'var(--ink-mid)', lineHeight: 1.6, marginBottom: 40, maxWidth: 480 }}>
-            Skip the courier. Connect with travellers heading between cities and get your package delivered by a real person — faster, cheaper, and with a conversation.
+          <p style={{ fontSize: 16, color: 'var(--ink-mid)', lineHeight: 1.6, marginBottom: 28, maxWidth: 440 }}>
+            Skip the courier. Connect with travellers heading between cities and get your package delivered by a real person — faster and cheaper.
           </p>
           <div style={{ display: 'flex', gap: 16 }}>
             <Link to="/login" className="btn btn-primary" style={{ fontSize: 15, padding: '12px 28px' }} onClick={() => posthog.capture('get_started_click', { cta: 'send_package' })}>
@@ -70,7 +70,7 @@ export default function Home() {
               </div>
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Bangalore → Mumbai</h3>
-            <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 16 }}>Electronics · 1.2 kg · by 30 May</p>
+            <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 16 }}>Electronics · 1.2 kg · by {new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
             <div className="divider" />
             <p style={{ fontSize: 13, color: 'var(--ink-mid)' }}>
               "Laptop charger urgently needed — happy to pay ₹300–400 for someone flying tomorrow."
@@ -80,23 +80,23 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section style={{ padding: '80px var(--page-px)', background: 'var(--surface)' }}>
+      <section style={{ padding: '40px var(--page-px)', background: 'var(--surface)' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
-          <span className="label" style={{ marginBottom: 12, display: 'block' }}>How it works</span>
-          <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 56, color: 'var(--ink)' }}>Three steps to delivered</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 40 }}>
+          <span className="label" style={{ marginBottom: 8, display: 'block' }}>How it works</span>
+          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 32, color: 'var(--ink)' }}>Three steps to delivered</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
             {HOW_IT_WORKS.map(item => (
               <div key={item.step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{
-                  width: 48, height: 48, borderRadius: '50%',
+                  width: 40, height: 40, borderRadius: '50%',
                   background: 'var(--saffron)', color: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20, fontWeight: 800, marginBottom: 20, flexShrink: 0,
+                  fontSize: 17, fontWeight: 800, marginBottom: 14, flexShrink: 0,
                 }}>
                   {item.step}
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>{item.title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--ink-mid)', lineHeight: 1.6 }}>{item.desc}</p>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{item.title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--ink-mid)', lineHeight: 1.5 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -104,24 +104,24 @@ export default function Home() {
       </section>
 
       {/* Why CarryKaro */}
-      <section style={{ padding: '80px var(--page-px)' }}>
+      <section style={{ padding: '40px var(--page-px)' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
-          <span className="label" style={{ marginBottom: 12, display: 'block' }}>Why CarryKaro</span>
-          <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 56, color: 'var(--ink)' }}>
+          <span className="label" style={{ marginBottom: 8, display: 'block' }}>Why CarryKaro</span>
+          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 28, color: 'var(--ink)' }}>
             Better for everyone on the route
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             {WHY_CARDS.map(card => (
-              <div key={card.title} className="card" style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 28, marginBottom: 14 }}>{card.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{card.title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--ink-mid)', lineHeight: 1.6, margin: 0 }}>{card.desc}</p>
+              <div key={card.title} className="card" style={{ textAlign: 'left', padding: '16px' }}>
+                <div style={{ fontSize: 22, marginBottom: 10 }}>{card.icon}</div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{card.title}</h3>
+                <p style={{ fontSize: 12, color: 'var(--ink-mid)', lineHeight: 1.5, margin: 0 }}>{card.desc}</p>
               </div>
             ))}
           </div>
 
-          <div style={{ marginTop: 56 }}>
-            <Link to="/login" className="btn btn-primary" style={{ fontSize: 15, padding: '14px 36px' }} onClick={() => posthog.capture('get_started_click', { cta: 'bottom_cta' })}>
+          <div style={{ marginTop: 32 }}>
+            <Link to="/login" className="btn btn-primary" style={{ fontSize: 15, padding: '12px 32px' }} onClick={() => posthog.capture('get_started_click', { cta: 'bottom_cta' })}>
               Get started — it's free
             </Link>
           </div>

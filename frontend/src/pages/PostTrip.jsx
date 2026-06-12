@@ -21,9 +21,15 @@ export default function PostTrip() {
 
   const validate = () => {
     const e = {}
-    if (form.travel_date && form.travel_date < today) e.travel_date = 'Travel date must be today or later'
+    if (!form.travel_date) e.travel_date = 'Please select a travel date'
+    else if (form.travel_date < today) e.travel_date = 'Travel date must be today or later'
     if (parseInt(form.earning_range_min) < 1) e.earning_range_min = 'Min earning must be at least ₹1'
     return e
+  }
+
+  const handleDateChange = (e) => {
+    set('travel_date', e.target.value)
+    setErrors(ev => ({ ...ev, travel_date: null }))
   }
 
   const submit = async (e) => {
@@ -72,7 +78,7 @@ export default function PostTrip() {
 
           <div className="grid-2">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Input label="Travel date" name="travel_date" type="date" value={form.travel_date} onChange={e => { set('travel_date', e.target.value); setErrors(ev => ({ ...ev, travel_date: null })) }} required min={today} />
+              <Input label="Travel date" name="travel_date" type="date" value={form.travel_date} onChange={handleDateChange} onInput={handleDateChange} min={today} />
               {err('travel_date')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

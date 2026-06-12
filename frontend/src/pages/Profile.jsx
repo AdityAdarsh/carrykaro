@@ -17,7 +17,7 @@ export default function Profile() {
   }
   const [profile, setProfile] = useState(null)
   const [contactEdit, setContactEdit] = useState(false)
-  const [contact, setContact] = useState({ phone: '', email: '' })
+  const [contact, setContact] = useState({ phone: '' })
   const [countryCode, setCountryCode] = useState('+91')
 
   const COUNTRY_CODES = [
@@ -34,7 +34,7 @@ export default function Profile() {
   useEffect(() => {
     api.get('/users/profile').then(p => {
       setProfile(p)
-      setContact({ phone: p.phone || '', email: p.email || '' })
+      setContact({ phone: p.phone || '' })
     }).catch((err) => {
       if (err.message === 'Profile not found') navigate('/onboarding')
     })
@@ -67,7 +67,9 @@ export default function Profile() {
           {/* Name + city */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 20, fontWeight: 700 }}>{profile.name}</div>
-            <div style={{ fontSize: 14, color: 'var(--ink-light)', marginTop: 4 }}>{profile.city} · {profile.role}</div>
+            <div style={{ fontSize: 14, color: 'var(--ink-light)', marginTop: 4 }}>
+              {profile.city} · {{ both: 'Sender & Carrier', sender: 'Sender', carrier: 'Carrier' }[profile.role] ?? profile.role}
+            </div>
           </div>
 
           <div className="divider" />
@@ -109,12 +111,12 @@ export default function Profile() {
                     />
                   </div>
                 </div>
-                <Input label="Email" value={contact.email} onChange={e => setContact(c => ({ ...c, email: e.target.value }))} placeholder="you@example.com" />
+
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Button onClick={saveContact} disabled={saving} style={{ flex: 1 }}>
                     {saving ? 'Saving…' : 'Save'}
                   </Button>
-                  <button onClick={() => { setContactEdit(false); setContact({ phone: profile.phone || '', email: profile.email || '' }) }} style={{
+                  <button onClick={() => { setContactEdit(false); setContact({ phone: profile.phone || '' }) }} style={{
                     flex: 1, padding: '10px 16px', borderRadius: 10, border: '1.5px solid var(--border)',
                     background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--ink-light)',
                   }}>Cancel</button>
@@ -125,10 +127,6 @@ export default function Profile() {
                 {profile.phone
                   ? <div>📞 {profile.phone}</div>
                   : <div style={{ color: 'var(--saffron)', cursor: 'pointer', fontWeight: 500 }} onClick={() => setContactEdit(true)}>+ Add phone number</div>
-                }
-                {profile.email
-                  ? <div>✉️ {profile.email}</div>
-                  : <div style={{ color: 'var(--saffron)', cursor: 'pointer', fontWeight: 500 }} onClick={() => setContactEdit(true)}>+ Add email address</div>
                 }
               </div>
             )}
@@ -149,14 +147,9 @@ export default function Profile() {
 
           <div className="divider" style={{ marginTop: 20 }} />
 
-          <button onClick={handleSignOut} style={{
-            marginTop: 4, width: '100%', padding: '10px 16px',
-            borderRadius: 10, border: '1.5px solid var(--border)',
-            background: 'none', cursor: 'pointer',
-            fontSize: 14, fontWeight: 600, color: 'var(--ink-light)',
-          }}>
+          <Button onClick={handleSignOut} variant="outline" style={{ width: '100%', marginTop: 4 }}>
             Sign out
-          </button>
+          </Button>
         </Card>
       </div>
     </main>

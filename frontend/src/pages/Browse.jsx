@@ -152,13 +152,15 @@ export default function Browse() {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         onClick={() => markAsMatched(item)}
-                        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--saffron)', background: 'none', color: 'var(--saffron)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                        className="btn btn-outline"
+                        style={{ flex: 1 }}
                       >
                         Mark as matched
                       </button>
                       <button
                         onClick={() => deleteMyListing(item)}
-                        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e53e3e', background: 'none', color: '#e53e3e', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                        className="btn btn-danger"
+                        style={{ flex: 1 }}
                       >
                         Delete
                       </button>

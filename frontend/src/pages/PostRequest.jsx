@@ -23,9 +23,15 @@ export default function PostRequest() {
 
   const validate = () => {
     const e = {}
-    if (form.needed_by_date && form.needed_by_date < today) e.needed_by_date = 'Date must be today or later'
+    if (!form.needed_by_date) e.needed_by_date = 'Please select a date'
+    else if (form.needed_by_date < today) e.needed_by_date = 'Date must be today or later'
     if (parseInt(form.price_range_max) < 1) e.price_range_max = 'Budget must be at least ₹1'
     return e
+  }
+
+  const handleDateChange = (e) => {
+    set('needed_by_date', e.target.value)
+    setErrors(ev => ({ ...ev, needed_by_date: null }))
   }
 
   const uploadPhotos = async () => {
@@ -84,7 +90,7 @@ export default function PostRequest() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Input label="Needed by" name="needed_by_date" type="date" value={form.needed_by_date} onChange={e => { set('needed_by_date', e.target.value); setErrors(ev => ({ ...ev, needed_by_date: null })) }} required min={today} />
+            <Input label="Needed by" name="needed_by_date" type="date" value={form.needed_by_date} onChange={handleDateChange} onInput={handleDateChange} min={today} />
             {err('needed_by_date')}
           </div>
 
