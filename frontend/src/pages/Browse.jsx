@@ -100,7 +100,10 @@ export default function Browse() {
         {tab === 'mine' ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
             {myListingsLoading ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--ink-light)', padding: 40 }}>Loading…</div>
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--ink-light)', padding: 40 }}>
+                <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                Getting the carriers moving…
+              </div>
             ) : myListings.length === 0 ? (
               <Card style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px 24px' }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>

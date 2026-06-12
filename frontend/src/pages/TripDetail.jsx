@@ -7,6 +7,7 @@ import posthog from '../lib/posthog'
 import StatusBadge from '../components/ui/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import LoadingPage from '../components/ui/LoadingPage'
 
 export default function TripDetail() {
   const { id } = useParams()
@@ -74,7 +75,7 @@ export default function TripDetail() {
     }
   }
 
-  if (!trip) return <main style={{ paddingTop: 120, textAlign: 'center', color: 'var(--ink-light)' }}>Loading…</main>
+  if (!trip) return <LoadingPage />
 
   const isOwn = trip.user_id === user?.id
 

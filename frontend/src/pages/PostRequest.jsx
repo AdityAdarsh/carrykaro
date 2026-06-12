@@ -48,17 +48,21 @@ export default function PostRequest() {
     const e2 = validate()
     if (Object.keys(e2).length) { setErrors(e2); return }
     setLoading(true)
-    const photo_urls = await uploadPhotos()
-    const budget = parseInt(form.price_range_max)
-    await api.post('/requests', {
-      ...form,
-      weight_kg: parseFloat(form.weight_kg),
-      price_range_min: budget,
-      price_range_max: budget,
-      photo_urls,
-    })
-    posthog.capture('request_posted', { from_city: form.from_city, to_city: form.to_city, item_type: form.item_type })
-    navigate('/browse')
+    try {
+      const photo_urls = await uploadPhotos()
+      const budget = parseInt(form.price_range_max)
+      await api.post('/requests', {
+        ...form,
+        weight_kg: parseFloat(form.weight_kg),
+        price_range_min: budget,
+        price_range_max: budget,
+        photo_urls,
+      })
+      posthog.capture('request_posted', { from_city: form.from_city, to_city: form.to_city, item_type: form.item_type })
+      navigate('/browse')
+    } catch {
+      setLoading(false)
+    }
   }
 
   const err = (k) => errors[k] ? (

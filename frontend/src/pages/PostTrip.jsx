@@ -37,15 +37,19 @@ export default function PostTrip() {
     const e2 = validate()
     if (Object.keys(e2).length) { setErrors(e2); return }
     setLoading(true)
-    const minEarning = parseInt(form.earning_range_min)
-    await api.post('/trips', {
-      ...form,
-      capacity_kg: parseFloat(form.capacity_kg),
-      earning_range_min: minEarning,
-      earning_range_max: minEarning,
-    })
-    posthog.capture('trip_posted', { from_city: form.from_city, to_city: form.to_city, travel_mode: form.travel_mode })
-    navigate('/browse')
+    try {
+      const minEarning = parseInt(form.earning_range_min)
+      await api.post('/trips', {
+        ...form,
+        capacity_kg: parseFloat(form.capacity_kg),
+        earning_range_min: minEarning,
+        earning_range_max: minEarning,
+      })
+      posthog.capture('trip_posted', { from_city: form.from_city, to_city: form.to_city, travel_mode: form.travel_mode })
+      navigate('/browse')
+    } catch {
+      setLoading(false)
+    }
   }
 
   const err = (k) => errors[k] ? (

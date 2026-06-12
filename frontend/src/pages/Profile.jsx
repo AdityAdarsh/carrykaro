@@ -6,6 +6,7 @@ import { CITIES } from '../lib/utils'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
+import LoadingPage from '../components/ui/LoadingPage'
 
 export default function Profile() {
   const { user, signOut } = useAuth()
@@ -42,21 +43,26 @@ export default function Profile() {
 
   const saveContact = async () => {
     setSaving(true)
-    const codeDigits = countryCode.replace('+', '')
-    const normalized = contact.phone
-      .replace(/^0+/, '')                              // strip leading zeros
-      .replace(new RegExp(`^${codeDigits}`), '')       // strip country code if user typed it
-    const payload = {
-      ...contact,
-      phone: normalized ? `${countryCode}${normalized}` : '',
+    try {
+      const codeDigits = countryCode.replace('+', '')
+      const normalized = contact.phone
+        .replace(/^0+/, '')
+        .replace(new RegExp(`^${codeDigits}`), '')
+      const payload = {
+        ...contact,
+        phone: normalized ? `${countryCode}${normalized}` : '',
+      }
+      const updated = await api.patch('/users/profile', payload)
+      setProfile(p => ({ ...p, ...updated }))
+      setContactEdit(false)
+    } catch {
+      // saving failed — button re-enables, user can retry
+    } finally {
+      setSaving(false)
     }
-    const updated = await api.patch('/users/profile', payload)
-    setProfile(p => ({ ...p, ...updated }))
-    setContactEdit(false)
-    setSaving(false)
   }
 
-  if (!profile) return <main style={{ paddingTop: 80, padding: '80px var(--page-px)' }}><p style={{ color: 'var(--ink-light)' }}>Loading…</p></main>
+  if (!profile) return <LoadingPage />
 
   return (
     <main style={{ paddingTop: 80, padding: '80px var(--page-px) 48px' }}>
@@ -68,7 +74,7 @@ export default function Profile() {
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 20, fontWeight: 700 }}>{profile.name}</div>
             <div style={{ fontSize: 14, color: 'var(--ink-light)', marginTop: 4 }}>
-              {profile.city} · {{ both: 'Sender & Carrier', sender: 'Sender', carrier: 'Carrier' }[profile.role] ?? profile.role}
+              {profile.city} · {{ both: 'Sender & Carrier', sender: 'Sender', traveller: 'Carrier' }[profile.role] ?? profile.role}
             </div>
           </div>
 
@@ -116,10 +122,9 @@ export default function Profile() {
                   <Button onClick={saveContact} disabled={saving} style={{ flex: 1 }}>
                     {saving ? 'Saving…' : 'Save'}
                   </Button>
-                  <button onClick={() => { setContactEdit(false); setContact({ phone: profile.phone || '' }) }} style={{
-                    flex: 1, padding: '10px 16px', borderRadius: 10, border: '1.5px solid var(--border)',
-                    background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--ink-light)',
-                  }}>Cancel</button>
+                  <Button variant="outline" onClick={() => { setContactEdit(false); setContact({ phone: profile.phone || '' }) }} style={{ flex: 1 }}>
+                    Cancel
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -128,6 +133,7 @@ export default function Profile() {
                   ? <div>📞 {profile.phone}</div>
                   : <div style={{ color: 'var(--saffron)', cursor: 'pointer', fontWeight: 500 }} onClick={() => setContactEdit(true)}>+ Add phone number</div>
                 }
+                {profile.email && <div>✉️ {profile.email}</div>}
               </div>
             )}
           </div>

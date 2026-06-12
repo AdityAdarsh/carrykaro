@@ -73,7 +73,10 @@ export default function MessagesPage() {
         </p>
 
         {loading && (
-          <p style={{ color: 'var(--ink-light)', fontSize: 14 }}>Loading…</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ink-light)', fontSize: 14 }}>
+            <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+            Getting the carriers moving…
+          </div>
         )}
 
         {!loading && matches.length === 0 && (
