@@ -219,7 +219,7 @@ export default function Browse() {
                       <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
                         No {tab === 'requests' ? 'delivery requests' : 'trips'} on this route yet
                       </h3>
-                      <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: routeDemand > 0 ? 12 : 24, maxWidth: 360, margin: `0 auto ${routeDemand > 0 ? '12px' : '24px'}` }}>
+                      <p style={{ fontSize: 14, color: 'var(--ink-light)', maxWidth: 360, margin: `0 auto ${routeDemand > 0 ? '12px' : '24px'}` }}>
                         Be the first to know when someone posts on this corridor.
                       </p>
                       {routeDemand > 0 && (
