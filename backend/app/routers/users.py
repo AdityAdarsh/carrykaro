@@ -19,6 +19,8 @@ async def create_profile(body: UserProfileCreate, user=Depends(get_current_user)
         "role": body.role,
         "kyc_status": "not_started",
     }
+    if body.travel_frequency is not None:
+        data["travel_frequency"] = body.travel_frequency
     try:
         result = db.table("users").upsert(data).execute()
     except APIError as e:

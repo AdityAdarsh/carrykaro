@@ -7,6 +7,7 @@ from datetime import datetime
 class UserRole(str, Enum):
     sender = "sender"
     traveller = "traveller"
+    both = "both"
 
 
 class KYCStatus(str, Enum):
@@ -32,6 +33,7 @@ class UserProfileCreate(BaseModel):
     name: str
     city: Optional[str] = None
     role: UserRole
+    travel_frequency: Optional[str] = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -40,3 +42,4 @@ class UserProfileUpdate(BaseModel):
     role: Optional[UserRole] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    travel_frequency: Optional[str] = None

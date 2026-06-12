@@ -6,6 +6,13 @@ from app.models.route_alert import RouteAlertCreate
 router = APIRouter()
 
 
+@router.get("/demand")
+async def get_route_demand(from_city: str, to_city: str, looking_for: str, user=Depends(get_current_user)):
+    db = get_supabase()
+    result = db.table("route_alerts").select("id").eq("from_city", from_city).eq("to_city", to_city).eq("looking_for", looking_for).execute()
+    return {"count": len(result.data)}
+
+
 @router.post("")
 async def create_route_alert(body: RouteAlertCreate, user=Depends(get_current_user)):
     db = get_supabase()

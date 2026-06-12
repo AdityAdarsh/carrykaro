@@ -22,6 +22,7 @@ export default function Browse() {
   const [myListingsLoading, setMyListingsLoading] = useState(false)
   const [filters, setFilters] = useState({ from_city: '', to_city: '' })
   const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false, error: null })
+  const [routeDemand, setRouteDemand] = useState(null)
 
   useEffect(() => {
     api.get('/users/profile').catch(err => {
@@ -45,7 +46,16 @@ export default function Browse() {
       api.get(`/trips?${params}`).then(setTrips)
     }
     setAlertForm({ open: false, from_city: '', to_city: '', submitted: false, loading: false })
+    setRouteDemand(null)
   }, [tab, filters])
+
+  useEffect(() => {
+    if (tab === 'mine' || items.length > 0 || !filters.from_city || !filters.to_city) return
+    const looking_for = tab === 'requests' ? 'request' : 'trip'
+    api.get(`/route-alerts/demand?from_city=${filters.from_city}&to_city=${filters.to_city}&looking_for=${looking_for}`)
+      .then(data => setRouteDemand(data.count))
+      .catch(() => {})
+  }, [items, filters, tab])
 
   const markAsMatched = async (item) => {
     const endpoint = item.type === 'trip' ? `/trips/${item.id}/status` : `/requests/${item.id}/status`
@@ -209,9 +219,14 @@ export default function Browse() {
                       <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
                         No {tab === 'requests' ? 'delivery requests' : 'trips'} on this route yet
                       </h3>
-                      <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+                      <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: routeDemand > 0 ? 12 : 24, maxWidth: 360, margin: `0 auto ${routeDemand > 0 ? '12px' : '24px'}` }}>
                         Be the first to know when someone posts on this corridor.
                       </p>
+                      {routeDemand > 0 && (
+                        <p style={{ fontSize: 13, color: 'var(--saffron)', fontWeight: 600, marginBottom: 20 }}>
+                          {routeDemand} {routeDemand === 1 ? 'person is' : 'people are'} already waiting for this route
+                        </p>
+                      )}
                       {alertForm.submitted ? (
                         <div style={{ color: 'var(--saffron)', fontWeight: 600, fontSize: 15 }}>
                           ✓ We'll notify you when a {tab === 'requests' ? 'request' : 'trip'} is posted here.

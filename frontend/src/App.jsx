@@ -27,10 +27,32 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function FeedbackButton() {
+  return (
+    <button
+      data-tally-open="ODV0a7"
+      data-tally-emoji-text="💬"
+      data-tally-emoji-animation="wave"
+      data-tally-width="400"
+      style={{
+        position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
+        background: 'var(--saffron)', color: '#fff',
+        border: 'none', borderRadius: 24, padding: '10px 18px',
+        fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(232,96,28,0.35)',
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}
+    >
+      💬 Feedback
+    </button>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Nav />
+      <FeedbackButton />
       <Routes>
         <Route path="/" element={<HomeRedirect />} />
         <Route path="/login" element={<Login />} />
