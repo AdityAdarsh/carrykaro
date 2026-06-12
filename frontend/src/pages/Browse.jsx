@@ -24,6 +24,8 @@ export default function Browse() {
   const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false, error: null })
   const [routeDemand, setRouteDemand] = useState(null)
 
+  const items = tab === 'requests' ? requests : trips
+
   useEffect(() => {
     api.get('/users/profile').catch(err => {
       if (err.message === 'Profile not found') navigate('/onboarding')
@@ -69,8 +71,6 @@ export default function Browse() {
     await api.delete(endpoint)
     setMyListings(prev => prev.filter(l => l.id !== item.id))
   }
-
-  const items = tab === 'requests' ? requests : trips
 
   return (
     <main style={{ paddingTop: 80, minHeight: '100vh', padding: '80px var(--page-px) 48px' }}>
