@@ -22,7 +22,7 @@ const HOW_IT_WORKS = [
 
 const WHY_CARDS = [
   { icon: '💸', title: '30–50% cheaper', desc: 'Set your own budget. Travellers with spare space compete to carry for you.' },
-  { icon: '⚡', title: 'Same-day on popular routes', desc: 'Bangalore ↔ Mumbai, Delhi ↔ Pune and more — someone's heading there today.' },
+  { icon: '⚡', title: 'Same-day on popular routes', desc: "Bangalore ↔ Mumbai, Delhi ↔ Pune and more — someone's heading there today." },
   { icon: '🎒', title: 'Earn on every trip', desc: 'Turn spare bag space into ₹200–800 per carry. No commitment, carry when you want.' },
   { icon: '🤝', title: 'Real people, real accountability', desc: 'Every user has a verified profile. Chat before you commit.' },
 ]
