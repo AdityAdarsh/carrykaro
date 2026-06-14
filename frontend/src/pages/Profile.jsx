@@ -153,6 +153,22 @@ export default function Profile() {
 
           <div className="divider" style={{ marginTop: 20 }} />
 
+          <button
+            data-tally-open="ODV0a7"
+            data-tally-emoji-text="💬"
+            data-tally-emoji-animation="wave"
+            data-tally-width="400"
+            style={{
+              width: '100%', marginTop: 4, padding: '10px 0',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 14, color: 'var(--ink-light)', textAlign: 'center',
+            }}
+          >
+            Send feedback
+          </button>
+
+          <div className="divider" />
+
           <Button onClick={handleSignOut} variant="outline" style={{ width: '100%', marginTop: 4 }}>
             Sign out
           </Button>

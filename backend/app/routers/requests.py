@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
+from datetime import date
 from app.dependencies import get_current_user
 from app.database import get_supabase
 from app.models.request import DeliveryRequestCreate
@@ -29,7 +30,7 @@ async def list_requests(
     user=Depends(get_current_user),
 ):
     db = get_supabase()
-    q = db.table("requests").select("*, users(name, city), matches(count)").eq("status", "open").eq("is_stub", False)
+    q = db.table("requests").select("*, users(name, city), matches(count)").eq("status", "open").eq("is_stub", False).gte("needed_by_date", date.today().isoformat())
     if from_city:
         q = q.eq("from_city", from_city)
     if to_city:
@@ -69,5 +70,7 @@ async def cancel_request(request_id: str, user=Depends(get_current_user)):
     accepted = db.table("matches").select("id").eq("request_id", request_id).eq("status", "accepted").execute()
     if accepted.data:
         raise HTTPException(status_code=409, detail="You have an active match on this request. Close the match before deleting.")
-    db.table("requests").update({"status": "cancelled"}).eq("id", request_id).eq("user_id", user.id).execute()
+    result = db.table("requests").update({"status": "cancelled"}).eq("id", request_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Request not found or not yours")
     return {"ok": True}

@@ -127,6 +127,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <footer style={{ padding: '16px var(--page-px)', textAlign: 'center' }}>
+        <a href="/privacy.html" style={{ fontSize: 11, color: '#B0A89E', textDecoration: 'none' }}>Privacy Policy</a>
+      </footer>
     </main>
   )
 }

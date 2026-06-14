@@ -1,6 +1,6 @@
 # CarryKaro — Project Brief
 
-**Last updated:** 2026-06-12
+**Last updated:** 2026-06-14
 **Owner:** Aditya Adarsh (adityai81011@gmail.com)
 
 ---
@@ -206,15 +206,15 @@ Goal: gauge real demand before building full functionality. Drive traffic, colle
 | 8 | Stub listings hidden from Browse | ✅ Done — `is_stub` flag; run `003_stub_and_match_count.sql` in Supabase to activate |
 | 9 | Match interest count on listings | ✅ Done — "X interested" badge on Browse cards + detail pages |
 | 10 | My Listings tab in Browse | ✅ Done — mark-as-matched + delete actions inline |
-| 11 | Enhanced onboarding | ⬜ Add "Both" role + travel frequency field |
-| 12 | Landing page — How It Works + Why CarryKaro | ⬜ Conversion copy |
-| 13 | Route popularity signal | ⬜ Real data only, no seeded numbers |
-| 14 | Feedback widget | ⬜ Tally.so embed — needs Tally form ID from Aditya |
+| 11 | Enhanced onboarding | ✅ Done — "Both" role + travel frequency field added |
+| 12 | Landing page — How It Works + Why CarryKaro | ✅ Done — conversion copy live |
+| 13 | Route popularity signal | ✅ Done — real data only |
+| 14 | Feedback widget | ✅ Done — Tally.so embed live |
 
 **PostHog events to track:**
 `landing_page_visit`, `get_started_click`, `signup_completed`, `role_selected`, `request_posted`, `trip_posted`, `listing_viewed`, `listing_clicked`, `match_requested`, `route_alert_created`, `feedback_submitted`
 
-**Phase 1 complete when all items above are live. Then stop building. Drive traffic.**
+**Phase 1 is code-complete. All 14 items shipped. Now: drive traffic, measure metrics.**
 
 **Success metrics (measure 4–6 weeks post-launch):**
 - Match rate >30% to continue (below 10% after 500 users = liquidity problem)
@@ -227,6 +227,7 @@ Goal: gauge real demand before building full functionality. Drive traffic, colle
 ## Explicitly Deferred to Phase 2
 
 Do not touch until Phase 1 metrics justify it:
+- **Stale listing auto-expiry:** Browse already filters out past-date listings on read (`.gte("needed_by_date", today)` on requests, `.gte("travel_date", today)` on trips). For Phase 2: add an `expired` status (distinct from `cancelled` = user-deleted), set up a Supabase pg_cron job to mark past-date `open` listings as `expired` daily, and show a "Repost?" CTA in My Listings for expired entries.
 - Payments / Razorpay / Escrow
 - KYC / IDfy
 - Insurance
@@ -241,14 +242,6 @@ Do not touch until Phase 1 metrics justify it:
 
 ---
 
-## Pending Manual Actions (Supabase SQL Editor)
-
-These must be run manually — Supabase CLI not installed:
-
-1. `supabase/migrations/003_stub_and_match_count.sql` — adds `is_stub` to trips + requests; Browse will error without it
-
----
-
 ## Production Bug Fixes (2026-06-10)
 
 All production users were getting "Load Failed" / "Failed to fetch" on the Onboarding page. Root causes found and fixed:
@@ -259,11 +252,30 @@ All production users were getting "Load Failed" / "Failed to fetch" on the Onboa
 
 ---
 
-## What's NOT Done Yet (Phase 1 remaining)
+## Post-Phase-1 Polish (2026-06-13 session)
 
-- [ ] Run `003_stub_and_match_count.sql` in Supabase SQL Editor (critical — Browse breaks without it)
-- [ ] Enhanced onboarding (Both role + travel frequency)
-- [ ] Landing page How It Works + Why CarryKaro sections
-- [ ] Route popularity signal (real data only)
-- [ ] Feedback widget (Tally.so — needs form ID from Aditya)
-- [ ] Legal / compliance page
+Changes shipped in commits `ec87b0d` and `5cb4490`:
+
+- **Button system:** Three-tier CSS system — `btn-primary` (saffron fill), `btn-outline` (transparent/border), `btn-danger` (red outline). `justify-content: center` added to base `.btn` so text stays centred at any width. All pages migrated off inline styles.
+- **LoadingPage component:** Spinner + "Loading…" → "Getting the carriers moving…" after 5s. Used in Profile, RequestDetail, TripDetail.
+- **Browse + Messages loading states:** Inline loading text replaced with spinner + branded message.
+- **`api.js` retry + 401 handling:** Retries up to 3× (5s delay) on `TypeError` (Render cold start). On 401: attempts session refresh once; signs out only if refresh also fails. Prevents false logouts for users with briefly-expired tokens.
+- **iOS date input fix:** Added `min-height: 44px`, `padding: 10px 14px`, `display: block` with `!important` — Safari was collapsing date fields to near-zero height.
+- **Profile fixes:** Role label correctly maps DB value `traveller` → "Carrier" (not `carrier`). Email shown as read-only in view mode. Cancel button uses `btn-outline`. `saveContact` uses `try/finally` so saving state always resets on error.
+- **PostRequest / PostTrip:** Submit handler now has `try/catch`; `setLoading(false)` in catch so button doesn't stay stuck.
+- **ButtonPreview page:** `/button-preview` — visual reference for all button variants.
+
+## Netlify Push Budget
+
+~5 pushes remaining of the free tier allotment (resets 11 July 2026). **Do not push automatically — always ask first.**
+
+## Pending Manual Actions (Supabase SQL Editor)
+
+These must be run manually — Supabase CLI not installed:
+
+1. `supabase/migrations/003_stub_and_match_count.sql` — adds `is_stub` to trips + requests; Browse will error without it
+
+## Remaining Gaps
+
+- [ ] Legal / compliance page (not built)
+- [ ] Google OAuth consent screen still shows Supabase URL ("to continue to ciyloumrhebzecfgptzg.supabase.co") — not fixable without paid Supabase custom domain; workaround: switch Audience to Production + add `carrykaro.live` to Authorized Domains in Google Cloud Console

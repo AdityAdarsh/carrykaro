@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import Nav from './components/Nav'
 import Home from './pages/Home'
@@ -29,6 +29,8 @@ function ProtectedRoute({ children }) {
 }
 
 function FeedbackButton() {
+  const { pathname } = useLocation()
+  if (pathname !== '/browse') return null
   return (
     <button
       data-tally-open="ODV0a7"
