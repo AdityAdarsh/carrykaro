@@ -14,6 +14,19 @@ import RequestDetail from './pages/RequestDetail'
 import TripDetail from './pages/TripDetail'
 import ButtonPreview from './pages/ButtonPreview'
 
+function NotFound() {
+  return (
+    <main style={{ paddingTop: 80, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px var(--page-px)' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Page not found</h1>
+        <p style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 24 }}>This route doesn't exist.</p>
+        <a href="/browse" className="btn btn-primary">Back to Browse</a>
+      </div>
+    </main>
+  )
+}
+
 function HomeRedirect() {
   const { user, loading } = useAuth()
   if (loading) return null
@@ -62,6 +75,7 @@ export default function App() {
         <Route path="/chat/:matchId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/button-preview" element={<ButtonPreview />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#FAF6F1"/>
+  <!-- box body -->
+  <rect x="6" y="13" width="20" height="14" rx="2" fill="#E8601C"/>
+  <!-- box lid -->
+  <rect x="4" y="10" width="24" height="5" rx="2" fill="#C04E12"/>
+  <!-- ribbon -->
+  <rect x="14" y="10" width="4" height="17" fill="#FAF6F1" opacity="0.4"/>
+</svg>
