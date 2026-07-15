@@ -1,15 +1,41 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useChat } from '../hooks/useChat'
 import { useAuth } from '../hooks/useAuth'
-import { formatDate } from '../lib/utils'
+import { api } from '../lib/api'
+import { supabase } from '../lib/supabase'
+import StatusBadge from '../components/ui/StatusBadge'
+import Button from '../components/ui/Button'
 
 export default function ChatPage() {
   const { matchId } = useParams()
   const { user } = useAuth()
   const { messages, loading, sendMessage } = useChat(matchId)
   const [input, setInput] = useState('')
+  const [match, setMatch] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [actionError, setActionError] = useState('')
   const bottomRef = useRef(null)
+
+  const loadMatch = useCallback(() => {
+    api.get(`/matches/${matchId}`).then(setMatch).catch(() => {})
+  }, [matchId])
+
+  useEffect(() => { loadMatch() }, [loadMatch])
+
+  // Refresh match status when the other party accepts/declines/marks delivered/received
+  useEffect(() => {
+    if (!matchId) return
+    const channel = supabase
+      .channel(`match:${matchId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
+        () => loadMatch()
+      )
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [matchId, loadMatch])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -29,11 +55,62 @@ export default function ChatPage() {
     setInput('')
   }
 
+  const runAction = async (path) => {
+    setActionLoading(true)
+    setActionError('')
+    try {
+      await api.post(`/matches/${matchId}/${path}`)
+      loadMatch()
+    } catch (e) {
+      setActionError(e.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const requestOwnerId = match?.requests?.user_id
+  const tripOwnerId = match?.trips?.user_id
+  const isInitiator = user?.id === match?.initiated_by
+  const isSender = user?.id === requestOwnerId
+  const isTraveller = user?.id === tripOwnerId
+
+  const renderStatusAction = () => {
+    if (!match) return null
+    const { status } = match
+    if (status === 'requested') {
+      if (isInitiator) return <p style={{ fontSize: 13, color: 'var(--ink-light)' }}>Waiting for a response…</p>
+      return (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button onClick={() => runAction('accept')} disabled={actionLoading}>Accept</Button>
+          <Button variant="outline" onClick={() => runAction('decline')} disabled={actionLoading}>Decline</Button>
+        </div>
+      )
+    }
+    if (status === 'accepted') {
+      if (isTraveller) return <Button onClick={() => runAction('mark-delivered')} disabled={actionLoading}>Mark as delivered</Button>
+      return <p style={{ fontSize: 13, color: 'var(--ink-light)' }}>Waiting for traveller to deliver the package…</p>
+    }
+    if (status === 'delivered') {
+      if (isSender) return <Button onClick={() => runAction('mark-received')} disabled={actionLoading}>Mark as received</Button>
+      return <p style={{ fontSize: 13, color: 'var(--ink-light)' }}>Waiting for sender to confirm receipt…</p>
+    }
+    if (status === 'completed') return <p style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>Completed ✓</p>
+    if (status === 'declined') return <p style={{ fontSize: 13, color: '#CC3333' }}>Match declined</p>
+    return null
+  }
+
   return (
     <main style={{ paddingTop: 60, height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ borderBottom: '1px solid var(--border)', padding: '16px var(--page-px)', background: 'var(--white)' }}>
         <h2 style={{ fontSize: 18, fontWeight: 700 }}>Match chat</h2>
-        <p style={{ fontSize: 13, color: 'var(--ink-light)' }}>No phone numbers shared. Keep it here until you've confirmed.</p>
+        <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 12 }}>No phone numbers shared. Keep it here until you've confirmed.</p>
+        {match && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <StatusBadge status={match.status} />
+            {renderStatusAction()}
+          </div>
+        )}
+        {actionError && <p style={{ fontSize: 12, color: '#CC3333', marginTop: 8 }}>{actionError}</p>}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px var(--page-px)', display: 'flex', flexDirection: 'column', gap: 12 }}>

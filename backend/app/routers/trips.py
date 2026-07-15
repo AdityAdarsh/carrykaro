@@ -1,20 +1,26 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from typing import Optional
 from datetime import date
 from app.dependencies import get_current_user
 from app.database import get_supabase
 from app.models.trip import TripCreate
+from app.services.route_alerts_notify import notify_route_alerts
 
 router = APIRouter()
 
 
 @router.post("")
-async def create_trip(body: TripCreate, user=Depends(get_current_user)):
+async def create_trip(body: TripCreate, background_tasks: BackgroundTasks, user=Depends(get_current_user)):
     db = get_supabase()
     data = {**body.model_dump(), "user_id": user.id, "status": "open"}
     data["travel_date"] = str(data["travel_date"])
     result = db.table("trips").insert(data).execute()
-    return result.data[0]
+    created = result.data[0]
+    if not created.get("is_stub"):
+        background_tasks.add_task(
+            notify_route_alerts, db, created["from_city"], created["to_city"], "trip", user.id
+        )
+    return created
 
 
 @router.get("")
@@ -61,7 +67,7 @@ async def update_trip_status(trip_id: str, body: dict, user=Depends(get_current_
 @router.delete("/{trip_id}")
 async def cancel_trip(trip_id: str, user=Depends(get_current_user)):
     db = get_supabase()
-    accepted = db.table("matches").select("id").eq("trip_id", trip_id).eq("status", "accepted").execute()
+    accepted = db.table("matches").select("id").eq("trip_id", trip_id).in_("status", ["accepted", "delivered"]).execute()
     if accepted.data:
         raise HTTPException(status_code=409, detail="You have an active match on this trip. Close the match before deleting.")
     result = db.table("trips").update({"status": "cancelled"}).eq("id", trip_id).eq("user_id", user.id).execute()

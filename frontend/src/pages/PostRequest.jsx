@@ -132,6 +132,10 @@ export default function PostRequest() {
           </div>
           */}
 
+          <p style={{ fontSize: 12, color: 'var(--ink-light)' }}>
+            Meet your traveller in public and show the item unsealed before handoff. No cash, restricted, or illegal items. Read our <a href="/safety.html" target="_blank" rel="noopener" style={{ color: 'var(--saffron)' }}>Safety & Prohibited Items</a> guide.
+          </p>
+
           <Button type="submit" disabled={loading || sameCities}>
             {loading ? 'Posting…' : 'Post request'}
           </Button>

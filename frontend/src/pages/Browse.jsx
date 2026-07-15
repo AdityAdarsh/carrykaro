@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { CITIES, formatDate } from '../lib/utils'
 import posthog from '../lib/posthog'
@@ -13,14 +13,20 @@ const STATUS_LABEL = {
   completed: { label: 'Completed', color: '#6366f1', bg: '#eef2ff' },
 }
 
+const VALID_TABS = ['requests', 'trips', 'mine']
+
 export default function Browse() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState('requests') // 'requests' | 'trips' | 'mine'
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => {
+    const t = searchParams.get('tab')
+    return VALID_TABS.includes(t) ? t : 'requests'
+  })
   const [requests, setRequests] = useState([])
   const [trips, setTrips] = useState([])
   const [myListings, setMyListings] = useState([])
   const [myListingsLoading, setMyListingsLoading] = useState(false)
-  const [filters, setFilters] = useState({ from_city: '', to_city: '' })
+  const [filters, setFilters] = useState({ from_city: searchParams.get('from') || '', to_city: searchParams.get('to') || '' })
   const [alertForm, setAlertForm] = useState({ open: false, from_city: '', to_city: '', submitted: false, loading: false, error: null })
   const [routeDemand, setRouteDemand] = useState(null)
 

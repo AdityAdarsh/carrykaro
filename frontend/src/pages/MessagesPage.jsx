@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import Card from '../components/ui/Card'
+import { STATUS_COLORS } from '../components/ui/StatusBadge'
 
 export default function MessagesPage() {
   const { user } = useAuth()
@@ -57,12 +58,18 @@ export default function MessagesPage() {
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
   }
 
-  const statusLabel = (status) => {
-    if (status === 'requested') return { text: 'Pending', color: 'var(--ink-light)' }
-    if (status === 'accepted') return { text: 'Accepted', color: '#16a34a' }
-    if (status === 'declined') return { text: 'Declined', color: '#e53e3e' }
-    return { text: status, color: 'var(--ink-light)' }
+  const STATUS_TEXT = {
+    requested: 'Pending',
+    accepted: 'Accepted',
+    declined: 'Declined',
+    delivered: 'Delivered',
+    completed: 'Completed',
   }
+
+  const statusLabel = (status) => ({
+    text: STATUS_TEXT[status] || status,
+    color: STATUS_COLORS[status] || 'var(--ink-light)',
+  })
 
   return (
     <main style={{ paddingTop: 80, minHeight: '100vh', padding: '80px var(--page-px) 80px' }}>

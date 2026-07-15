@@ -61,21 +61,46 @@ async def decline_match(match_id: str, user=Depends(get_current_user)):
     match, _, _ = _get_match_and_check_party(db, match_id, user.id)
     if user.id == match.get("initiated_by"):
         raise HTTPException(status_code=403, detail="You cannot decline a match you initiated")
+    if match.get("status") != "requested":
+        raise HTTPException(status_code=400, detail="Only a pending match can be declined")
     result = db.table("matches").update({"status": "declined"}).eq("id", match_id).execute()
     return result.data[0]
 
 
-@router.post("/{match_id}/confirm-delivery")
-async def confirm_delivery(match_id: str, user=Depends(get_current_user)):
-    """Both parties call this. When both confirmed, status → completed and payout triggers."""
+@router.post("/{match_id}/mark-delivered")
+async def mark_delivered(match_id: str, user=Depends(get_current_user)):
+    """Traveller confirms the package has been dropped off."""
     db = get_supabase()
-    # Store confirmation per user; payment service handles release logic
-    result = db.table("matches").select("*").eq("id", match_id).single().execute()
-    match = result.data
-    if not match:
-        raise HTTPException(status_code=404, detail="Match not found")
-    # TODO: track sender/traveller confirmation separately, trigger payout when both confirmed
-    return {"match_id": match_id, "confirmed_by": user.id}
+    match, _, trip_owner = _get_match_and_check_party(db, match_id, user.id)
+    if user.id != trip_owner:
+        raise HTTPException(status_code=403, detail="Only the traveller can mark the package as delivered")
+    if match.get("status") != "accepted":
+        raise HTTPException(status_code=400, detail="Match must be accepted before it can be marked as delivered")
+    result = db.table("matches").update({"status": "delivered"}).eq("id", match_id).execute()
+    match = result.data[0]
+    if match.get("request_id"):
+        db.table("requests").update({"status": "delivered"}).eq("id", match["request_id"]).execute()
+    # trips.status has no 'delivered' value in its DB enum (open/matched/completed/cancelled) —
+    # it intentionally stays 'matched' until mark_received moves it straight to 'completed'.
+    return match
+
+
+@router.post("/{match_id}/mark-received")
+async def mark_received(match_id: str, user=Depends(get_current_user)):
+    """Requester confirms the package has been received, closing out the match."""
+    db = get_supabase()
+    match, request_owner, _ = _get_match_and_check_party(db, match_id, user.id)
+    if user.id != request_owner:
+        raise HTTPException(status_code=403, detail="Only the requester can confirm receipt")
+    if match.get("status") != "delivered":
+        raise HTTPException(status_code=400, detail="Match must be delivered before receipt can be confirmed")
+    result = db.table("matches").update({"status": "completed"}).eq("id", match_id).execute()
+    match = result.data[0]
+    if match.get("request_id"):
+        db.table("requests").update({"status": "completed"}).eq("id", match["request_id"]).execute()
+    if match.get("trip_id"):
+        db.table("trips").update({"status": "completed"}).eq("id", match["trip_id"]).execute()
+    return match
 
 
 @router.get("/my")
@@ -105,6 +130,7 @@ async def my_matches(user=Depends(get_current_user)):
 @router.get("/{match_id}")
 async def get_match(match_id: str, user=Depends(get_current_user)):
     db = get_supabase()
+    _get_match_and_check_party(db, match_id, user.id)
     result = (
         db.table("matches")
         .select("*, requests(id, from_city, to_city, item_type, weight_kg, needed_by_date, price_range_max, user_id, users(name, city)), trips(id, from_city, to_city, travel_date, travel_mode, capacity_kg, earning_range_min, user_id, users(name, city))")

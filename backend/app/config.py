@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     platform_fee_percent: int = 10
     cors_origins: str = "http://localhost:5173"
 
+    resend_api_key: str = ""
+    from_email: str = "CarryKaro <onboarding@resend.dev>"
+    frontend_base_url: str = "https://carrykaro.live"
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",")]

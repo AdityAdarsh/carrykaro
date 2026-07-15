@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from typing import Optional
 from datetime import date
 from app.dependencies import get_current_user
 from app.database import get_supabase
 from app.models.request import DeliveryRequestCreate
+from app.services.route_alerts_notify import notify_route_alerts
 from postgrest.exceptions import APIError
 
 router = APIRouter()
 
 
 @router.post("")
-async def create_request(body: DeliveryRequestCreate, user=Depends(get_current_user)):
+async def create_request(body: DeliveryRequestCreate, background_tasks: BackgroundTasks, user=Depends(get_current_user)):
     db = get_supabase()
     data = {**body.model_dump(), "user_id": user.id, "status": "open"}
     data["needed_by_date"] = str(data["needed_by_date"])
@@ -20,7 +21,12 @@ async def create_request(body: DeliveryRequestCreate, user=Depends(get_current_u
         if e.code == "23503":
             raise HTTPException(status_code=400, detail="Please complete your profile before posting a request.")
         raise HTTPException(status_code=500, detail=str(e.message))
-    return result.data[0]
+    created = result.data[0]
+    if not created.get("is_stub"):
+        background_tasks.add_task(
+            notify_route_alerts, db, created["from_city"], created["to_city"], "request", user.id
+        )
+    return created
 
 
 @router.get("")
@@ -67,7 +73,7 @@ async def update_request_status(request_id: str, body: dict, user=Depends(get_cu
 @router.delete("/{request_id}")
 async def cancel_request(request_id: str, user=Depends(get_current_user)):
     db = get_supabase()
-    accepted = db.table("matches").select("id").eq("request_id", request_id).eq("status", "accepted").execute()
+    accepted = db.table("matches").select("id").eq("request_id", request_id).in_("status", ["accepted", "delivered"]).execute()
     if accepted.data:
         raise HTTPException(status_code=409, detail="You have an active match on this request. Close the match before deleting.")
     result = db.table("requests").update({"status": "cancelled"}).eq("id", request_id).eq("user_id", user.id).execute()

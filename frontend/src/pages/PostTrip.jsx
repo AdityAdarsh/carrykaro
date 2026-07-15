@@ -107,6 +107,10 @@ export default function PostTrip() {
             {err('earning_range_min')}
           </div>
 
+          <p style={{ fontSize: 12, color: 'var(--ink-light)' }}>
+            Meet the sender in public and inspect any package before accepting it — never carry a sealed item. Read our <a href="/safety.html" target="_blank" rel="noopener" style={{ color: 'var(--saffron)' }}>Safety & Prohibited Items</a> guide.
+          </p>
+
           <Button type="submit" disabled={loading || sameCities}>
             {loading ? 'Posting…' : 'Post trip'}
           </Button>
