@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     from_email: str = "CarryKaro <onboarding@resend.dev>"
     frontend_base_url: str = "https://carrykaro.live"
+    backend_base_url: str = "https://carrykaro-0zpp.onrender.com"
 
     @property
     def cors_origins_list(self) -> List[str]:

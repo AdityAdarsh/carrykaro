@@ -59,7 +59,9 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 
 - **Tables:** `users`, `requests`, `trips`, `matches`, `messages`, `payments`, `route_alerts`
 - **RLS:** enabled on all tables
-- **Migrations run:** `001_initial_schema.sql`, `002_route_alerts.sql`, `003_stub_and_match_count.sql`, `004_travel_frequency_both_role.sql` — all applied in Supabase
+- **Migrations run:** `001_initial_schema.sql`, `002_route_alerts.sql`, `003_stub_and_match_count.sql`, `004_travel_frequency_both_role.sql`, `005_realtime_matches.sql` — all applied in Supabase
+- **Schema quirk:** `route_alerts.user_id` references `auth.users(id)` directly, unlike every other table which references `public.users(id)` — PostgREST can't embed `users(...)` in a `route_alerts` select because of this. See Route Alert Email Notifications below.
+- **Schema limitation:** `trip_status` enum only has `open / matched / completed / cancelled` — no `delivered` or `in_transit` value (unlike `request_status`, which has both). Don't set `trips.status = 'delivered'` without a migration first — it violates the enum constraint.
 - **Note:** `users_phone_unique` constraint intentionally kept — phone verification planned for Phase 2
 
 ---
@@ -116,22 +118,25 @@ Project root: `/Users/adityaadarsh/Documents/Claude Projects/Carrykaro V1`
 
 ---
 
-## Status Lifecycle (designed, partially implemented)
+## Status Lifecycle (2026-07-15: delivered/completed now wired)
 
 ```
-Request:  open → matched → in_transit → delivered → completed / cancelled
-Match:    requested → accepted → in_transit → delivered → completed / declined
-Trip:     open → matched → completed / cancelled
+Request:  open → matched → delivered → completed / cancelled   (in_transit unused)
+Match:    requested → accepted → delivered → completed / declined
+Trip:     open → matched → completed / cancelled                (no delivered state — enum limitation, see Database)
 ```
 
 **What's actually wired up:**
 - Match created → status `requested` ✅
-- Match accepted → status `accepted` ✅ (also updates request + trip to `matched`)
-- Match declined → status `declined` ✅
-- in_transit / delivered / completed transitions ❌ (deferred to Phase 2)
-- Confirm delivery + payout ❌ (`POST /matches/:id/confirm-delivery` endpoint exists but is a TODO stub)
+- Match accepted → status `accepted` ✅ (also updates request + trip to `matched`) — `POST /matches/:id/accept`
+- Match declined → status `declined` ✅, only legal from `requested` (guard added 2026-07-15) — `POST /matches/:id/decline`
+- Traveller marks delivered → match + request → `delivered` ✅ — `POST /matches/:id/mark-delivered`. Trip status intentionally NOT updated here (no `delivered` value in `trip_status` enum); trip stays `matched` until completion.
+- Sender confirms receipt → match + request + trip → `completed` ✅ — `POST /matches/:id/mark-received`
+- `in_transit` — declared in both `RequestStatus`/`MatchStatus` enums but no code path ever sets it; vestigial, not wired to anything
+- Payout on completion ❌ (deferred to Phase 2 with Razorpay — old `confirm-delivery` stub was removed and replaced by mark-delivered/mark-received, no payment logic added)
+- **Cancellation guard:** `DELETE /requests/:id` and `DELETE /trips/:id` block if a match is `accepted` OR `delivered` (fixed 2026-07-15 — previously only checked `accepted`, so a listing could be cancelled mid-handoff and later silently overwritten back to `completed` by mark-received)
 
-For MVP: requests stay `open` indefinitely. Fine until real volume.
+For MVP: requests stay `open` indefinitely if never matched. Fine until real volume.
 
 ---
 
@@ -180,7 +185,7 @@ For MVP: requests stay `open` indefinitely. Fine until real volume.
 | `users` | POST/GET/PATCH `/profile`, GET `/listings` | ✅ Full |
 | `requests` | POST/GET (list)/GET `:id`/PATCH `:id/status`/DELETE `:id` | ✅ Full |
 | `trips` | POST/GET (list)/GET `:id`/PATCH `:id/status`/DELETE `:id` | ✅ Full |
-| `matches` | POST, POST `:id/accept`, POST `:id/decline`, GET `/my`, GET `:id` | ✅ Full |
+| `matches` | POST, POST `:id/accept`, POST `:id/decline`, POST `:id/mark-delivered`, POST `:id/mark-received`, GET `/my`, GET `:id` | ✅ Full — delivery confirmation flow added 2026-07-15, replacing the old `confirm-delivery` stub |
 | `chat` | POST `/messages`, GET `/messages/:matchId` | ✅ Full |
 | `route_alerts` | GET `/demand`, POST | ✅ Full — POST now triggers email notification (see below) |
 | `payments` | POST `/create-order`, POST `/verify` | ⚠️ Stub — both raise `NotImplementedError` |
@@ -189,16 +194,44 @@ For MVP: requests stay `open` indefinitely. Fine until real volume.
 
 ---
 
-## Route Alert Email Notifications (2026-07-15)
+## Route Alert Email Notifications (2026-07-15 — LIVE)
 
-Route alerts (`route_alerts` table) previously only captured demand with no delivery mechanism — a user could register interest in a route and never hear anything back. Now wired end to end:
+Route alerts (`route_alerts` table) previously only captured demand with no delivery mechanism — a user could register interest in a route and never hear anything back. Now wired end to end and confirmed working in production (verified: real email received, correct `carrykaro.live` link).
 
 - **Event-driven, not cron:** when `POST /requests` or `POST /trips` creates a new listing, `notify_route_alerts()` (`backend/app/services/route_alerts_notify.py`) fires as a `BackgroundTasks` job — no polling, no scheduler to host.
-- Looks up `route_alerts` rows matching the new listing's `from_city`/`to_city`/`looking_for`, excludes the listing's own creator, fetches recipient emails from `users`, sends via Resend (`backend/app/services/email.py`).
-- **Schema quirk found & worked around:** `route_alerts.user_id` references `auth.users(id)` directly (unlike every other table, which references `public.users(id)`), so PostgREST can't embed `users(email, name)` in one query. Fetch alerts and users separately instead of via `.select("route_alerts, users(...)")`. Fix this properly only if it becomes a recurring pain — noted here so nobody re-discovers it via a 400 error.
-- Email failures are logged and swallowed (`send_email` never raises) — a Resend outage must never break listing creation.
-- **Known v1 tradeoff:** no "already notified" tracking. A busy route will re-email an alerted user on every new matching listing, not just the first. Fine at current volume; revisit with a `notified_at` column if it gets noisy.
-- **Status: code complete, not yet live** — needs a real `RESEND_API_KEY` (currently a placeholder in `backend/.env`). One manual step outside Claude's reach: sign up at resend.com, verify a sending domain (or use `onboarding@resend.dev` for testing), then set `RESEND_API_KEY` + `FRONTEND_BASE_URL=https://carrykaro.live` on Render.
+- Looks up `route_alerts` rows matching the new listing's `from_city`/`to_city`/`looking_for`, excludes the listing's own creator via `.neq("user_id", ...)`, fetches recipient emails from `users`, sends via Resend (`backend/app/services/email.py`).
+- **Stub listings excluded** — the one-tap "express interest" flow (`TripDetail.jsx`/`RequestDetail.jsx`) creates `is_stub: true` requests/trips just to attach a match; these are skipped so alert subscribers aren't emailed about listings that never appear in Browse (fixed 2026-07-15).
+- **HTML-escaped + URL-encoded** — `from_city`/`to_city` are free-text on the backend (only the frontend UI restricts them via a dropdown), so both are escaped with `html.escape()` before going into the email body/href, and the deep link's query string uses `urlencode()` (fixed 2026-07-15 — previously vulnerable to HTML/attribute injection via a direct API call, and city names with spaces broke the link in some email clients).
+- **Deep link works** — `Browse.jsx` now reads `?tab=&from=&to=` via `useSearchParams` on load and pre-fills the tab + filters (fixed 2026-07-15 — previously the link was decorative and always landed on the default Browse view).
+- **Batched sends** — `send_email()`/`send_batch()` in `email.py` call Resend's `/emails/batch` endpoint (up to 100 recipients per HTTP call) instead of one blocking call per recipient (fixed 2026-07-15).
+- Email failures are logged and swallowed (never raises) — a Resend outage must never break listing creation.
+- **Known v1 tradeoff (unchanged):** no "already notified" tracking. A busy route will re-email an alerted user on every new matching listing, not just the first. Fine at current volume; revisit with a `notified_at` column if it gets noisy.
+- **Manual setup completed:** Resend account created, `carrykaro.live` domain verified (DNS records added in Namecheap — DKIM TXT, SPF MX + TXT, DMARC TXT; needed "Custom MX" mode switched on in Namecheap's Mail Settings before the MX record type appeared), `RESEND_API_KEY` + `FROM_EMAIL=CarryKaro <alerts@carrykaro.live>` + `FRONTEND_BASE_URL=https://carrykaro.live` set on Render.
+
+---
+
+## Delivery Confirmation Flow (2026-07-15)
+
+Closes the gap previously listed under Explicitly Deferred as "Request/trip status transitions." Replaced the old `POST /matches/:id/confirm-delivery` stub (raised nothing useful, had a `# TODO` for tracking per-party confirmation) with two real endpoints in `backend/app/routers/matches.py`:
+
+- **`POST /matches/:id/mark-delivered`** — only the traveller (trip owner) can call it, only from `accepted` status. Sets match + request to `delivered`. Does NOT touch `trips.status` (enum limitation — see Database section).
+- **`POST /matches/:id/mark-received`** — only the sender (request owner) can call it, only from `delivered` status. Sets match, request, AND trip to `completed`.
+- **`decline_match` guard added** — previously had no status check at all; now requires `status == 'requested'`, so a match that's already `delivered`/`completed` can't be declined out from under the other party.
+- **Known limitation:** `mark-delivered` is traveller-asserted with no sender recourse besides messaging them — a traveller can mark delivered on an undelivered package and the request shows `delivered` indefinitely with no dispute/override path. Acceptable at this scale (no payment on the line yet); watch for it in support tickets. Would need a dispute flow before Razorpay/escrow ships.
+
+**Frontend (`ChatPage.jsx`):**
+- Shows a status badge + the correct action button per party: `requested` → Accept/Decline (for the non-initiator), `accepted` → "Mark as delivered" (traveller only), `delivered` → "Mark as received" (sender only), `completed` → "Completed ✓".
+- Fetches match state via `GET /matches/:id` on mount, and now also subscribes to Supabase Realtime (`postgres_changes` UPDATE on `matches`, filtered by `id`) so the other party's action shows up live instead of needing a manual reload. Requires migration `005_realtime_matches.sql` (adds `matches` to the `supabase_realtime` publication) — **already run in Supabase**.
+- `StatusBadge.jsx` now exports `STATUS_COLORS` as the single source of truth; `MessagesPage.jsx` imports it instead of a second hardcoded color map that had drifted (was showing a different shade of green for `completed` in the inbox list vs. the chat header).
+
+---
+
+## Safety & Prohibited Items Page (2026-07-15)
+
+Added ahead of any real-user launch — CarryKaro doesn't inspect packages or verify identities, so senders and travellers are meeting as strangers.
+
+- **`frontend/public/safety.html`** — static page matching the existing `privacy.html` pattern (same fonts/colors, not a React route). Covers: meet in public, open-package policy (never accept a sealed item), a prohibited items list (cash, drugs, weapons, alcohol/tobacco without license, stolen/counterfeit goods, live animals, hazardous materials), what to do if something goes wrong, and a liability/responsibility clause.
+- Linked from the landing page footer (next to Privacy Policy) and from a short notice directly above the submit button on both `PostRequest.jsx` and `PostTrip.jsx` — placed where it'll actually get read, right before someone posts.
 
 ---
 
@@ -267,7 +300,7 @@ Do not touch until Phase 1 metrics justify it:
 - Dispute management
 - Fraud detection
 - Custom admin dashboard
-- Request/trip status transitions (in_transit, delivered, completed)
+- ~~Request/trip status transitions (in_transit, delivered, completed)~~ — **delivered/completed shipped 2026-07-15**, see Delivery Confirmation Flow. `in_transit` remains unwired (vestigial enum value).
 - MatchPage full implementation (file exists, backend endpoint exists — just needs wiring)
 - **Item photos** — upload input is hidden in PostRequest for now. When re-enabling: add `browser-image-compression` (client-side, silent, ≤1MB target), show thumbnail preview after pick, display photo strip in RequestDetail. Code is already in place, just commented out.
 - **PRD** — to be written after Phase 1 testing; will capture validated decisions and inform Phase 2 scope
@@ -302,9 +335,21 @@ All production users were getting "Load Failed" / "Failed to fetch" on the Onboa
 
 ---
 
+## Route Alerts, Delivery Flow, Safety Page (2026-07-15)
+
+Pushed as commit `aacacbe`. Full detail in the dedicated sections above (Route Alert Email Notifications, Delivery Confirmation Flow, Safety & Prohibited Items Page). Summary:
+
+- Route alert emails now actually send (Resend, `carrykaro.live` domain verified) when a matching request/trip is posted
+- Delivery confirmation flow: `mark-delivered` → `mark-received` endpoints + ChatPage UI + live status updates via Realtime
+- `frontend/public/safety.html` — meet-in-public / open-package / prohibited-items guidance, linked from footer + both post forms
+- Code-review fixes bundled in: stale cancellation guard (blocked only on `accepted`, not `delivered`), `decline_match` missing a status guard, HTML injection risk in emails, broken deep link, duplicated status-color maps, sequential blocking email sends
+- Deliberately NOT fixed: `mark_delivered` doesn't set `trips.status` — would violate the `trip_status` Postgres enum (no `delivered` value exists for trips); documented instead of forced
+
+---
+
 ## Netlify Push Budget
 
-~5 pushes remaining of the free tier allotment (resets 11 July 2026). **Do not push automatically — always ask first.**
+Reset date (11 July 2026) has passed, so the free-tier allotment should have refreshed — exact remaining count not re-checked. One push made 2026-07-15 (commit `aacacbe` — route alert emails, delivery flow, safety page, review fixes). **Do not push automatically — always ask first.**
 
 ## Env Vars
 
@@ -317,14 +362,9 @@ VITE_POSTHOG_KEY=phc_nUS2kb3YLMdtzkqA6Nhhbn7fUjSFbPcK2uNjpZtnX2V3
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
-**Render (backend):** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS=https://carrykaro.live`
+**Render (backend):** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `CORS_ORIGINS=https://carrykaro.live`, `RESEND_API_KEY`, `FROM_EMAIL=CarryKaro <alerts@carrykaro.live>`, `FRONTEND_BASE_URL=https://carrykaro.live` (route-alert email vars added + confirmed live 2026-07-15)
 
-**Backend — route alert emails (not yet set on Render, placeholder only in local `.env`):**
-```
-RESEND_API_KEY=your-resend-api-key
-FROM_EMAIL=CarryKaro <onboarding@resend.dev>
-FRONTEND_BASE_URL=https://carrykaro.live
-```
+**Local backend `.env` note:** `FRONTEND_BASE_URL` is intentionally `http://localhost:5173` locally (so test emails during dev link to the local frontend) vs. `https://carrykaro.live` on Render — not a bug if a locally-triggered test email links to localhost.
 
 ---
 
